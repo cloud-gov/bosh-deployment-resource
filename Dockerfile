@@ -1,5 +1,6 @@
-FROM concourse/buildroot:git
-MAINTAINER https://github.com/cloudfoundry/bosh-deployment-resource
+ARG base_image
+
+FROM ${base_image}
 
 ADD check /opt/resource/check
 ADD in /opt/resource/in
