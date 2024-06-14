@@ -1,8 +1,21 @@
-FROM concourse/buildroot:git
-MAINTAINER https://github.com/cloudfoundry/bosh-deployment-resource
+ARG base_image
+ARG builder_image=concourse/golang-builder
 
-ADD check /opt/resource/check
-ADD in /opt/resource/in
-ADD out /opt/resource/out
+FROM ${builder_image} as builder
+WORKDIR /src
 
+COPY go.mod .
+COPY go.sum .
+RUN go mod download
+
+COPY . .
+ENV CGO_ENABLED 0
+
+RUN go build -o /assets/in ./cmd/in
+RUN go build -o /assets/out ./cmd/out
+RUN go build -o /assets/check ./cmd/check
+
+FROM ${base_image}
+
+COPY --from=builder assets/ /opt/resource/
 RUN chmod +x /opt/resource/*
