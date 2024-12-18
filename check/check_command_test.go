@@ -6,9 +6,9 @@ import (
 
 	"errors"
 
-	"github.com/cloudfoundry/bosh-deployment-resource/bosh/boshfakes"
-	"github.com/cloudfoundry/bosh-deployment-resource/check"
-	"github.com/cloudfoundry/bosh-deployment-resource/concourse"
+	"github.com/cloud-gov/bosh-deployment-resource/bosh/boshfakes"
+	"github.com/cloud-gov/bosh-deployment-resource/check"
+	"github.com/cloud-gov/bosh-deployment-resource/concourse"
 )
 
 var _ = Describe("CheckCommand", func() {

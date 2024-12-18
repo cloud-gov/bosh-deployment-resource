@@ -7,8 +7,8 @@ import (
 
 	"strings"
 
-	"github.com/cloudfoundry/bosh-deployment-resource/bosh"
-	"github.com/cloudfoundry/bosh-deployment-resource/concourse"
+	"github.com/cloud-gov/bosh-deployment-resource/bosh"
+	"github.com/cloud-gov/bosh-deployment-resource/concourse"
 )
 
 type InCommand struct {

@@ -13,12 +13,12 @@ import (
 
 	"errors"
 
+	"github.com/cloud-gov/bosh-deployment-resource/bosh"
+	"github.com/cloud-gov/bosh-deployment-resource/bosh/boshfakes"
+	"github.com/cloud-gov/bosh-deployment-resource/concourse"
+	"github.com/cloud-gov/bosh-deployment-resource/out"
+	"github.com/cloud-gov/bosh-deployment-resource/storage/storagefakes"
 	boshdir "github.com/cloudfoundry/bosh-cli/v7/director"
-	"github.com/cloudfoundry/bosh-deployment-resource/bosh"
-	"github.com/cloudfoundry/bosh-deployment-resource/bosh/boshfakes"
-	"github.com/cloudfoundry/bosh-deployment-resource/concourse"
-	"github.com/cloudfoundry/bosh-deployment-resource/out"
-	"github.com/cloudfoundry/bosh-deployment-resource/storage/storagefakes"
 )
 
 var _ = Describe("OutCommand", func() {

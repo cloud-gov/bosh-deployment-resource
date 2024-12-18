@@ -3,9 +3,9 @@ package bosh_test
 import (
 	"errors"
 
-	"github.com/cloudfoundry/bosh-deployment-resource/bosh"
-	"github.com/cloudfoundry/bosh-deployment-resource/bosh/boshfakes"
-	"github.com/cloudfoundry/bosh-deployment-resource/concourse"
+	"github.com/cloud-gov/bosh-deployment-resource/bosh"
+	"github.com/cloud-gov/bosh-deployment-resource/bosh/boshfakes"
+	"github.com/cloud-gov/bosh-deployment-resource/concourse"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

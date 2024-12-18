@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/cloudfoundry/bosh-cli/v7/director"
-	"github.com/cloudfoundry/bosh-deployment-resource/bosh"
+	"github.com/cloud-gov/bosh-deployment-resource/bosh"
 )
 
 type FakeDirector struct {

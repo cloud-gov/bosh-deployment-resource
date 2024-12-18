@@ -7,10 +7,10 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/cloudfoundry/bosh-deployment-resource/bosh"
-	"github.com/cloudfoundry/bosh-deployment-resource/concourse"
-	"github.com/cloudfoundry/bosh-deployment-resource/storage"
-	"github.com/cloudfoundry/bosh-deployment-resource/tools"
+	"github.com/cloud-gov/bosh-deployment-resource/bosh"
+	"github.com/cloud-gov/bosh-deployment-resource/concourse"
+	"github.com/cloud-gov/bosh-deployment-resource/storage"
+	"github.com/cloud-gov/bosh-deployment-resource/tools"
 )
 
 type OutResponse struct {

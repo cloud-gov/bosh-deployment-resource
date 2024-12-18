@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/cloudfoundry/bosh-utils/httpclient"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
 
-	"github.com/cloudfoundry/bosh-deployment-resource/concourse"
+	"github.com/cloudfoundry/bosh-utils/httpclient"
+
+	"github.com/cloud-gov/bosh-deployment-resource/concourse"
 
 	boshcmd "github.com/cloudfoundry/bosh-cli/v7/cmd"
 	cmdconf "github.com/cloudfoundry/bosh-cli/v7/cmd/config"

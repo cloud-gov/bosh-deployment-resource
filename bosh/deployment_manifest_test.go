@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/cloudfoundry/bosh-deployment-resource/bosh"
+	"github.com/cloud-gov/bosh-deployment-resource/bosh"
 )
 
 var _ = Describe("DeploymentManifest", func() {

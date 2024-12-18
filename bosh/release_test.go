@@ -1,7 +1,7 @@
 package bosh_test
 
 import (
-	"github.com/cloudfoundry/bosh-deployment-resource/bosh"
+	"github.com/cloud-gov/bosh-deployment-resource/bosh"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

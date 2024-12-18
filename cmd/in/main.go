@@ -8,10 +8,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/cloudfoundry/bosh-deployment-resource/bosh"
-	"github.com/cloudfoundry/bosh-deployment-resource/concourse"
-	"github.com/cloudfoundry/bosh-deployment-resource/in"
-	"github.com/cloudfoundry/socks5-proxy"
+	"github.com/cloud-gov/bosh-deployment-resource/bosh"
+	"github.com/cloud-gov/bosh-deployment-resource/concourse"
+	"github.com/cloud-gov/bosh-deployment-resource/in"
+	proxy "github.com/cloudfoundry/socks5-proxy"
 )
 
 func main() {

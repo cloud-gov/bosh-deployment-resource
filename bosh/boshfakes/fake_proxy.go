@@ -4,7 +4,7 @@ package boshfakes
 import (
 	"sync"
 
-	"github.com/cloudfoundry/bosh-deployment-resource/bosh"
+	"github.com/cloud-gov/bosh-deployment-resource/bosh"
 )
 
 type FakeProxy struct {

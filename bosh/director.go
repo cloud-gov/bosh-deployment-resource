@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cloudfoundry/bosh-deployment-resource/concourse"
+	"github.com/cloud-gov/bosh-deployment-resource/concourse"
 
 	boshcmdopts "github.com/cloudfoundry/bosh-cli/v7/cmd/opts"
 	"github.com/cloudfoundry/bosh-cli/v7/director"
