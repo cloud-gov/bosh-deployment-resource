@@ -1,6 +1,7 @@
 module github.com/cloudfoundry/bosh-deployment-resource
 
 go 1.22
+toolchain go1.23.7
 
 require (
 	github.com/cloudfoundry/bosh-cli/v7 v7.0.1
@@ -60,11 +61,11 @@ require (
 	github.com/rogpeppe/go-internal v1.8.1 // indirect
 	github.com/vito/go-interact v1.0.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	golang.org/x/crypto v0.31.0 // indirect
-	golang.org/x/net v0.23.0 // indirect
-	golang.org/x/sys v0.28.0 // indirect
-	golang.org/x/term v0.27.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
+	golang.org/x/crypto v0.35.0 // indirect
+	golang.org/x/net v0.36.0 // indirect
+	golang.org/x/sys v0.30.0 // indirect
+	golang.org/x/term v0.29.0 // indirect
+	golang.org/x/text v0.22.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
