@@ -1,13 +1,15 @@
 package stemcell
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
+
+	bosherr "github.com/cloudfoundry/bosh-utils/errors"
 
 	bicloud "github.com/cloudfoundry/bosh-cli/v7/cloud"
 	biconfig "github.com/cloudfoundry/bosh-cli/v7/config"
 	biui "github.com/cloudfoundry/bosh-cli/v7/ui"
-	bosherr "github.com/cloudfoundry/bosh-utils/errors"
 )
 
 type Manager interface {
@@ -69,7 +71,7 @@ func (m *manager) Upload(extractedStemcell ExtractedStemcell, uploadStage biui.S
 
 		stemcellRecord, err := m.repo.Save(manifest.Name, manifest.Version, cid, manifest.ApiVersion)
 		if err != nil {
-			//TODO: delete stemcell from cloud when saving fails
+			// TODO: delete stemcell from cloud when saving fails
 			return bosherr.WrapErrorf(err, "saving stemcell record in repo (cid=%s, stemcell=%s)", cid, extractedStemcell)
 		}
 
@@ -116,7 +118,8 @@ func (m *manager) DeleteUnused(deleteStage biui.Stage) error {
 		stepName := fmt.Sprintf("Deleting unused stemcell '%s'", stemcell.CID())
 		err = deleteStage.Perform(stepName, func() error {
 			err := stemcell.Delete()
-			cloudErr, ok := err.(bicloud.Error)
+			var cloudErr bicloud.Error
+			ok := errors.As(err, &cloudErr)
 			if ok && cloudErr.Type() == bicloud.StemcellNotFoundError {
 				return biui.NewSkipStageError(cloudErr, "Stemcell not found")
 			}

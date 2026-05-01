@@ -113,10 +113,11 @@ type FakeDirector struct {
 		result1 director.ConfigDiff
 		result2 error
 	}
-	DiffCloudConfigStub        func([]byte) (director.ConfigDiff, error)
+	DiffCloudConfigStub        func(string, []byte) (director.ConfigDiff, error)
 	diffCloudConfigMutex       sync.RWMutex
 	diffCloudConfigArgsForCall []struct {
-		arg1 []byte
+		arg1 string
+		arg2 []byte
 	}
 	diffCloudConfigReturns struct {
 		result1 director.ConfigDiff
@@ -376,9 +377,10 @@ type FakeDirector struct {
 		result1 director.CPIConfig
 		result2 error
 	}
-	LatestCloudConfigStub        func() (director.CloudConfig, error)
+	LatestCloudConfigStub        func(string) (director.CloudConfig, error)
 	latestCloudConfigMutex       sync.RWMutex
 	latestCloudConfigArgsForCall []struct {
+		arg1 string
 	}
 	latestCloudConfigReturns struct {
 		result1 director.CloudConfig
@@ -616,10 +618,11 @@ type FakeDirector struct {
 	updateCPIConfigReturnsOnCall map[int]struct {
 		result1 error
 	}
-	UpdateCloudConfigStub        func([]byte) error
+	UpdateCloudConfigStub        func(string, []byte) error
 	updateCloudConfigMutex       sync.RWMutex
 	updateCloudConfigArgsForCall []struct {
-		arg1 []byte
+		arg1 string
+		arg2 []byte
 	}
 	updateCloudConfigReturns struct {
 		result1 error
@@ -1224,23 +1227,24 @@ func (fake *FakeDirector) DiffCPIConfigReturnsOnCall(i int, result1 director.Con
 	}{result1, result2}
 }
 
-func (fake *FakeDirector) DiffCloudConfig(arg1 []byte) (director.ConfigDiff, error) {
-	var arg1Copy []byte
-	if arg1 != nil {
-		arg1Copy = make([]byte, len(arg1))
-		copy(arg1Copy, arg1)
+func (fake *FakeDirector) DiffCloudConfig(arg1 string, arg2 []byte) (director.ConfigDiff, error) {
+	var arg2Copy []byte
+	if arg2 != nil {
+		arg2Copy = make([]byte, len(arg2))
+		copy(arg2Copy, arg2)
 	}
 	fake.diffCloudConfigMutex.Lock()
 	ret, specificReturn := fake.diffCloudConfigReturnsOnCall[len(fake.diffCloudConfigArgsForCall)]
 	fake.diffCloudConfigArgsForCall = append(fake.diffCloudConfigArgsForCall, struct {
-		arg1 []byte
-	}{arg1Copy})
+		arg1 string
+		arg2 []byte
+	}{arg1, arg2Copy})
 	stub := fake.DiffCloudConfigStub
 	fakeReturns := fake.diffCloudConfigReturns
-	fake.recordInvocation("DiffCloudConfig", []interface{}{arg1Copy})
+	fake.recordInvocation("DiffCloudConfig", []interface{}{arg1, arg2Copy})
 	fake.diffCloudConfigMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -1254,17 +1258,17 @@ func (fake *FakeDirector) DiffCloudConfigCallCount() int {
 	return len(fake.diffCloudConfigArgsForCall)
 }
 
-func (fake *FakeDirector) DiffCloudConfigCalls(stub func([]byte) (director.ConfigDiff, error)) {
+func (fake *FakeDirector) DiffCloudConfigCalls(stub func(string, []byte) (director.ConfigDiff, error)) {
 	fake.diffCloudConfigMutex.Lock()
 	defer fake.diffCloudConfigMutex.Unlock()
 	fake.DiffCloudConfigStub = stub
 }
 
-func (fake *FakeDirector) DiffCloudConfigArgsForCall(i int) []byte {
+func (fake *FakeDirector) DiffCloudConfigArgsForCall(i int) (string, []byte) {
 	fake.diffCloudConfigMutex.RLock()
 	defer fake.diffCloudConfigMutex.RUnlock()
 	argsForCall := fake.diffCloudConfigArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeDirector) DiffCloudConfigReturns(result1 director.ConfigDiff, result2 error) {
@@ -2509,17 +2513,18 @@ func (fake *FakeDirector) LatestCPIConfigReturnsOnCall(i int, result1 director.C
 	}{result1, result2}
 }
 
-func (fake *FakeDirector) LatestCloudConfig() (director.CloudConfig, error) {
+func (fake *FakeDirector) LatestCloudConfig(arg1 string) (director.CloudConfig, error) {
 	fake.latestCloudConfigMutex.Lock()
 	ret, specificReturn := fake.latestCloudConfigReturnsOnCall[len(fake.latestCloudConfigArgsForCall)]
 	fake.latestCloudConfigArgsForCall = append(fake.latestCloudConfigArgsForCall, struct {
-	}{})
+		arg1 string
+	}{arg1})
 	stub := fake.LatestCloudConfigStub
 	fakeReturns := fake.latestCloudConfigReturns
-	fake.recordInvocation("LatestCloudConfig", []interface{}{})
+	fake.recordInvocation("LatestCloudConfig", []interface{}{arg1})
 	fake.latestCloudConfigMutex.Unlock()
 	if stub != nil {
-		return stub()
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -2533,10 +2538,17 @@ func (fake *FakeDirector) LatestCloudConfigCallCount() int {
 	return len(fake.latestCloudConfigArgsForCall)
 }
 
-func (fake *FakeDirector) LatestCloudConfigCalls(stub func() (director.CloudConfig, error)) {
+func (fake *FakeDirector) LatestCloudConfigCalls(stub func(string) (director.CloudConfig, error)) {
 	fake.latestCloudConfigMutex.Lock()
 	defer fake.latestCloudConfigMutex.Unlock()
 	fake.LatestCloudConfigStub = stub
+}
+
+func (fake *FakeDirector) LatestCloudConfigArgsForCall(i int) string {
+	fake.latestCloudConfigMutex.RLock()
+	defer fake.latestCloudConfigMutex.RUnlock()
+	argsForCall := fake.latestCloudConfigArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeDirector) LatestCloudConfigReturns(result1 director.CloudConfig, result2 error) {
@@ -3665,23 +3677,24 @@ func (fake *FakeDirector) UpdateCPIConfigReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeDirector) UpdateCloudConfig(arg1 []byte) error {
-	var arg1Copy []byte
-	if arg1 != nil {
-		arg1Copy = make([]byte, len(arg1))
-		copy(arg1Copy, arg1)
+func (fake *FakeDirector) UpdateCloudConfig(arg1 string, arg2 []byte) error {
+	var arg2Copy []byte
+	if arg2 != nil {
+		arg2Copy = make([]byte, len(arg2))
+		copy(arg2Copy, arg2)
 	}
 	fake.updateCloudConfigMutex.Lock()
 	ret, specificReturn := fake.updateCloudConfigReturnsOnCall[len(fake.updateCloudConfigArgsForCall)]
 	fake.updateCloudConfigArgsForCall = append(fake.updateCloudConfigArgsForCall, struct {
-		arg1 []byte
-	}{arg1Copy})
+		arg1 string
+		arg2 []byte
+	}{arg1, arg2Copy})
 	stub := fake.UpdateCloudConfigStub
 	fakeReturns := fake.updateCloudConfigReturns
-	fake.recordInvocation("UpdateCloudConfig", []interface{}{arg1Copy})
+	fake.recordInvocation("UpdateCloudConfig", []interface{}{arg1, arg2Copy})
 	fake.updateCloudConfigMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
@@ -3695,17 +3708,17 @@ func (fake *FakeDirector) UpdateCloudConfigCallCount() int {
 	return len(fake.updateCloudConfigArgsForCall)
 }
 
-func (fake *FakeDirector) UpdateCloudConfigCalls(stub func([]byte) error) {
+func (fake *FakeDirector) UpdateCloudConfigCalls(stub func(string, []byte) error) {
 	fake.updateCloudConfigMutex.Lock()
 	defer fake.updateCloudConfigMutex.Unlock()
 	fake.UpdateCloudConfigStub = stub
 }
 
-func (fake *FakeDirector) UpdateCloudConfigArgsForCall(i int) []byte {
+func (fake *FakeDirector) UpdateCloudConfigArgsForCall(i int) (string, []byte) {
 	fake.updateCloudConfigMutex.RLock()
 	defer fake.updateCloudConfigMutex.RUnlock()
 	argsForCall := fake.updateCloudConfigArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeDirector) UpdateCloudConfigReturns(result1 error) {
@@ -4186,116 +4199,6 @@ func (fake *FakeDirector) WithContextReturnsOnCall(i int, result1 director.Direc
 func (fake *FakeDirector) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.cancelTasksMutex.RLock()
-	defer fake.cancelTasksMutex.RUnlock()
-	fake.certificateExpiryMutex.RLock()
-	defer fake.certificateExpiryMutex.RUnlock()
-	fake.cleanUpMutex.RLock()
-	defer fake.cleanUpMutex.RUnlock()
-	fake.currentTasksMutex.RLock()
-	defer fake.currentTasksMutex.RUnlock()
-	fake.deleteConfigMutex.RLock()
-	defer fake.deleteConfigMutex.RUnlock()
-	fake.deleteConfigByIDMutex.RLock()
-	defer fake.deleteConfigByIDMutex.RUnlock()
-	fake.deploymentsMutex.RLock()
-	defer fake.deploymentsMutex.RUnlock()
-	fake.diffCPIConfigMutex.RLock()
-	defer fake.diffCPIConfigMutex.RUnlock()
-	fake.diffCloudConfigMutex.RLock()
-	defer fake.diffCloudConfigMutex.RUnlock()
-	fake.diffConfigMutex.RLock()
-	defer fake.diffConfigMutex.RUnlock()
-	fake.diffConfigByIDOrContentMutex.RLock()
-	defer fake.diffConfigByIDOrContentMutex.RUnlock()
-	fake.diffRuntimeConfigMutex.RLock()
-	defer fake.diffRuntimeConfigMutex.RUnlock()
-	fake.downloadResourceUncheckedMutex.RLock()
-	defer fake.downloadResourceUncheckedMutex.RUnlock()
-	fake.enableResurrectionMutex.RLock()
-	defer fake.enableResurrectionMutex.RUnlock()
-	fake.eventMutex.RLock()
-	defer fake.eventMutex.RUnlock()
-	fake.eventsMutex.RLock()
-	defer fake.eventsMutex.RUnlock()
-	fake.findDeploymentMutex.RLock()
-	defer fake.findDeploymentMutex.RUnlock()
-	fake.findOrphanDiskMutex.RLock()
-	defer fake.findOrphanDiskMutex.RUnlock()
-	fake.findOrphanNetworkMutex.RLock()
-	defer fake.findOrphanNetworkMutex.RUnlock()
-	fake.findReleaseMutex.RLock()
-	defer fake.findReleaseMutex.RUnlock()
-	fake.findReleaseSeriesMutex.RLock()
-	defer fake.findReleaseSeriesMutex.RUnlock()
-	fake.findStemcellMutex.RLock()
-	defer fake.findStemcellMutex.RUnlock()
-	fake.findTaskMutex.RLock()
-	defer fake.findTaskMutex.RUnlock()
-	fake.findTasksByContextIdMutex.RLock()
-	defer fake.findTasksByContextIdMutex.RUnlock()
-	fake.hasReleaseMutex.RLock()
-	defer fake.hasReleaseMutex.RUnlock()
-	fake.infoMutex.RLock()
-	defer fake.infoMutex.RUnlock()
-	fake.isAuthenticatedMutex.RLock()
-	defer fake.isAuthenticatedMutex.RUnlock()
-	fake.latestCPIConfigMutex.RLock()
-	defer fake.latestCPIConfigMutex.RUnlock()
-	fake.latestCloudConfigMutex.RLock()
-	defer fake.latestCloudConfigMutex.RUnlock()
-	fake.latestConfigMutex.RLock()
-	defer fake.latestConfigMutex.RUnlock()
-	fake.latestConfigByIDMutex.RLock()
-	defer fake.latestConfigByIDMutex.RUnlock()
-	fake.latestRuntimeConfigMutex.RLock()
-	defer fake.latestRuntimeConfigMutex.RUnlock()
-	fake.listConfigsMutex.RLock()
-	defer fake.listConfigsMutex.RUnlock()
-	fake.listDeploymentConfigsMutex.RLock()
-	defer fake.listDeploymentConfigsMutex.RUnlock()
-	fake.listDeploymentsMutex.RLock()
-	defer fake.listDeploymentsMutex.RUnlock()
-	fake.locksMutex.RLock()
-	defer fake.locksMutex.RUnlock()
-	fake.matchPackagesMutex.RLock()
-	defer fake.matchPackagesMutex.RUnlock()
-	fake.orphanDiskMutex.RLock()
-	defer fake.orphanDiskMutex.RUnlock()
-	fake.orphanDisksMutex.RLock()
-	defer fake.orphanDisksMutex.RUnlock()
-	fake.orphanNetworksMutex.RLock()
-	defer fake.orphanNetworksMutex.RUnlock()
-	fake.orphanedVMsMutex.RLock()
-	defer fake.orphanedVMsMutex.RUnlock()
-	fake.recentTasksMutex.RLock()
-	defer fake.recentTasksMutex.RUnlock()
-	fake.releaseHasCompiledPackageMutex.RLock()
-	defer fake.releaseHasCompiledPackageMutex.RUnlock()
-	fake.releasesMutex.RLock()
-	defer fake.releasesMutex.RUnlock()
-	fake.stemcellNeedsUploadMutex.RLock()
-	defer fake.stemcellNeedsUploadMutex.RUnlock()
-	fake.stemcellsMutex.RLock()
-	defer fake.stemcellsMutex.RUnlock()
-	fake.updateCPIConfigMutex.RLock()
-	defer fake.updateCPIConfigMutex.RUnlock()
-	fake.updateCloudConfigMutex.RLock()
-	defer fake.updateCloudConfigMutex.RUnlock()
-	fake.updateConfigMutex.RLock()
-	defer fake.updateConfigMutex.RUnlock()
-	fake.updateRuntimeConfigMutex.RLock()
-	defer fake.updateRuntimeConfigMutex.RUnlock()
-	fake.uploadReleaseFileMutex.RLock()
-	defer fake.uploadReleaseFileMutex.RUnlock()
-	fake.uploadReleaseURLMutex.RLock()
-	defer fake.uploadReleaseURLMutex.RUnlock()
-	fake.uploadStemcellFileMutex.RLock()
-	defer fake.uploadStemcellFileMutex.RUnlock()
-	fake.uploadStemcellURLMutex.RLock()
-	defer fake.uploadStemcellURLMutex.RUnlock()
-	fake.withContextMutex.RLock()
-	defer fake.withContextMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

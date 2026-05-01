@@ -1,11 +1,13 @@
 package ui
 
 import (
+	"errors"
 	"time"
 
 	"code.cloudfoundry.org/clock"
-	biuifmt "github.com/cloudfoundry/bosh-cli/v7/ui/fmt"
 	boshlog "github.com/cloudfoundry/bosh-utils/logger"
+
+	biuifmt "github.com/cloudfoundry/bosh-cli/v7/ui/fmt"
 )
 
 type Stage interface {
@@ -46,7 +48,8 @@ func (s *stage) Perform(name string, closure func() error) error {
 	startTime := s.timeService.Now()
 	err := closure()
 	if err != nil {
-		if skipErr, ok := err.(SkipStageError); ok {
+		var skipErr SkipStageError
+		if errors.As(err, &skipErr) {
 			s.ui.EndLinef(" Skipped [%s] (%s)", skipErr.SkipMessage(), s.elapsedSince(startTime))
 			s.logger.Info(s.logTag, "Skipped stage '%s': %s", name, skipErr.Error())
 			return nil

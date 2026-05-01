@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 
@@ -200,7 +199,7 @@ type ShouldTrackDownload interface {
 }
 
 func (r ClientRequest) readResponse(resp *http.Response, out io.Writer) ([]byte, *http.Response, error) {
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	logTag := "director.clientRequest"
 
@@ -209,8 +208,8 @@ func (r ClientRequest) readResponse(resp *http.Response, out io.Writer) ([]byte,
 	if out == nil {
 		if resp.Request != nil {
 			sanitizer := RequestSanitizer{Request: (*resp.Request)}
-			sanitizedRequest, _ := sanitizer.SanitizeRequest()
-			b, err := httputil.DumpRequest(&sanitizedRequest, true)
+			sanitizedRequest, _ := sanitizer.SanitizeRequest() //nolint:errcheck
+			b, err := httputil.DumpRequest(&sanitizedRequest, false)
 			if err == nil {
 				r.logger.Debug(logTag, "Dumping Director client request:\n%s", string(b))
 			}
@@ -221,7 +220,7 @@ func (r ClientRequest) readResponse(resp *http.Response, out io.Writer) ([]byte,
 			r.logger.Debug(logTag, "Dumping Director client response:\n%s", string(b))
 		}
 
-		respBody, err = ioutil.ReadAll(resp.Body)
+		respBody, err = io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, nil, bosherr.WrapError(err, "Reading Director response")
 		}

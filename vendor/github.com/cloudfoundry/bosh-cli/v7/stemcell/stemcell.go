@@ -2,12 +2,11 @@ package stemcell
 
 import (
 	"fmt"
+	"path/filepath"
 
 	boshfu "github.com/cloudfoundry/bosh-utils/fileutil"
 	biproperty "github.com/cloudfoundry/bosh-utils/property"
 	boshsys "github.com/cloudfoundry/bosh-utils/system"
-
-	"path/filepath"
 
 	"gopkg.in/yaml.v2"
 )
@@ -98,7 +97,17 @@ func (s *extractedStemcell) Pack(destinationPath string) error {
 		return err
 	}
 
-	intermediateStemcellPath, err := s.compressor.CompressFilesInDir(s.extractedPath)
+	paths, err := s.fs.Glob(filepath.Join(s.extractedPath, "*"))
+	if err != nil {
+		return err
+	}
+
+	filenames := []string{}
+	for _, p := range paths {
+		filenames = append(filenames, filepath.Base(p))
+	}
+
+	intermediateStemcellPath, err := s.compressor.CompressSpecificFilesInDir(s.extractedPath, filenames, boshfu.CompressorOptions{})
 	if err != nil {
 		return err
 	}
@@ -121,7 +130,7 @@ func (s *extractedStemcell) GetExtractedPath() string {
 
 func (s *extractedStemcell) save() error {
 	stemcellMfPath := filepath.Join(s.extractedPath, "stemcell.MF")
-	contents, _ := yaml.Marshal(s.manifest)
+	contents, _ := yaml.Marshal(s.manifest) //nolint:errcheck
 	err := s.fs.WriteFile(stemcellMfPath, contents)
 	if err != nil {
 		return err

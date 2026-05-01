@@ -3,7 +3,7 @@ package uaa
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	bosherr "github.com/cloudfoundry/bosh-utils/errors"
@@ -90,9 +90,9 @@ func (r ClientRequest) Post(path string, payload []byte, response interface{}) e
 }
 
 func (r ClientRequest) readResponse(resp *http.Response) ([]byte, error) {
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
-	respBody, err := ioutil.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, bosherr.WrapError(err, "Reading UAA response")
 	}

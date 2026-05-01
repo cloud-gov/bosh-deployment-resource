@@ -1,10 +1,11 @@
 package cmd
 
 import (
-	. "github.com/cloudfoundry/bosh-cli/v7/cmd/opts"
+	bosherr "github.com/cloudfoundry/bosh-utils/errors"
+
+	. "github.com/cloudfoundry/bosh-cli/v7/cmd/opts" //nolint:staticcheck
 	boshreldir "github.com/cloudfoundry/bosh-cli/v7/releasedir"
 	biui "github.com/cloudfoundry/bosh-cli/v7/ui"
-	bosherr "github.com/cloudfoundry/bosh-utils/errors"
 )
 
 type RemoveBlobCmd struct {

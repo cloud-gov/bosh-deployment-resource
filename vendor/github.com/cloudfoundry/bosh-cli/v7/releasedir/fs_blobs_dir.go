@@ -1,6 +1,7 @@
 package releasedir
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -12,12 +13,10 @@ import (
 	boshfu "github.com/cloudfoundry/bosh-utils/fileutil"
 	boshlog "github.com/cloudfoundry/bosh-utils/logger"
 	boshsys "github.com/cloudfoundry/bosh-utils/system"
+	"github.com/cloudfoundry/bosh-utils/work"
 	"gopkg.in/yaml.v2"
 
-	"fmt"
-
 	bicrypto "github.com/cloudfoundry/bosh-cli/v7/crypto"
-	"github.com/cloudfoundry/bosh-utils/work"
 )
 
 type FSBlobsDir struct {
@@ -199,7 +198,7 @@ func (d FSBlobsDir) TrackBlob(path string, src io.ReadCloser) (Blob, error) {
 		return Blob{}, bosherr.WrapErrorf(err, "Creating temp blob")
 	}
 
-	defer tempFile.Close()
+	defer tempFile.Close() //nolint:errcheck
 
 	_, err = io.Copy(tempFile, src)
 	if err != nil {
@@ -238,7 +237,7 @@ func (d FSBlobsDir) TrackBlob(path string, src io.ReadCloser) (Blob, error) {
 
 	blobs[idx] = Blob{Path: path, Size: fileInfo.Size(), SHA1: sha1}
 
-	tempFile.Close()
+	tempFile.Close() //nolint:errcheck
 
 	err = d.moveBlobLocally(tempFile.Name(), filepath.Join(d.dirPath, path))
 	if err != nil {

@@ -7,14 +7,15 @@ import (
 	"strings"
 	"time"
 
-	urlhelper "github.com/cloudfoundry/bosh-cli/v7/common/util"
-	biui "github.com/cloudfoundry/bosh-cli/v7/ui"
 	boshcrypto "github.com/cloudfoundry/bosh-utils/crypto"
 	bosherr "github.com/cloudfoundry/bosh-utils/errors"
 	"github.com/cloudfoundry/bosh-utils/httpclient"
 	boshlog "github.com/cloudfoundry/bosh-utils/logger"
 	boshretry "github.com/cloudfoundry/bosh-utils/retrystrategy"
 	boshsys "github.com/cloudfoundry/bosh-utils/system"
+
+	urlhelper "github.com/cloudfoundry/bosh-cli/v7/common/util"
+	biui "github.com/cloudfoundry/bosh-cli/v7/ui"
 )
 
 type Source interface {
@@ -115,7 +116,7 @@ func (p *provider) downloadRetryable(source Source) boshretry.Retryable {
 		}
 
 		defer func() {
-			downloadedFile.Close()
+			downloadedFile.Close() //nolint:errcheck
 
 			if err = p.fs.RemoveAll(downloadedFile.Name()); err != nil {
 				p.logger.Warn(p.logTag, "Failed to remove downloaded file: %s", err.Error())
@@ -148,7 +149,7 @@ func (p *provider) downloadRetryable(source Source) boshretry.Retryable {
 			return true, bosherr.WrapError(err, "Verifying digest for downloaded file")
 		}
 
-		downloadedFile.Close()
+		downloadedFile.Close() //nolint:errcheck
 
 		err = p.cache.Save(downloadedFile.Name(), source)
 		if err != nil {

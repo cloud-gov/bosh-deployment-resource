@@ -3,7 +3,7 @@ package cmd
 import (
 	bosherr "github.com/cloudfoundry/bosh-utils/errors"
 
-	. "github.com/cloudfoundry/bosh-cli/v7/cmd/opts"
+	. "github.com/cloudfoundry/bosh-cli/v7/cmd/opts" //nolint:staticcheck
 	boshdir "github.com/cloudfoundry/bosh-cli/v7/director"
 	boshui "github.com/cloudfoundry/bosh-cli/v7/ui"
 	boshtbl "github.com/cloudfoundry/bosh-cli/v7/ui/table"
@@ -74,10 +74,10 @@ func (c CloudCheckCmd) Run(opts CloudCheckOpts) error {
 		return err
 	}
 
-	return c.deployment.ResolveProblems(answers)
+	return c.deployment.ResolveProblems(answers, nil)
 }
 
-func (_ CloudCheckCmd) applyResolutions(resolutionsToApply []string, probs []boshdir.Problem) ([]boshdir.ProblemAnswer, error) {
+func (_ CloudCheckCmd) applyResolutions(resolutionsToApply []string, probs []boshdir.Problem) ([]boshdir.ProblemAnswer, error) { //nolint:staticcheck
 	var answers []boshdir.ProblemAnswer
 
 	for _, prob := range probs {

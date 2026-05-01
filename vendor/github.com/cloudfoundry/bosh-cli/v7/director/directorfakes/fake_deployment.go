@@ -141,12 +141,12 @@ type FakeDeployment struct {
 		result1 director.ExportReleaseResult
 		result2 error
 	}
-	FetchLogsStub        func(director.AllOrInstanceGroupOrInstanceSlug, []string, bool) (director.LogsResult, error)
+	FetchLogsStub        func(director.AllOrInstanceGroupOrInstanceSlug, []string, string) (director.LogsResult, error)
 	fetchLogsMutex       sync.RWMutex
 	fetchLogsArgsForCall []struct {
 		arg1 director.AllOrInstanceGroupOrInstanceSlug
 		arg2 []string
-		arg3 bool
+		arg3 string
 	}
 	fetchLogsReturns struct {
 		result1 director.LogsResult
@@ -238,10 +238,11 @@ type FakeDeployment struct {
 		result1 []director.Release
 		result2 error
 	}
-	ResolveProblemsStub        func([]director.ProblemAnswer) error
+	ResolveProblemsStub        func([]director.ProblemAnswer, map[string]string) error
 	resolveProblemsMutex       sync.RWMutex
 	resolveProblemsArgsForCall []struct {
 		arg1 []director.ProblemAnswer
+		arg2 map[string]string
 	}
 	resolveProblemsReturns struct {
 		result1 error
@@ -1100,7 +1101,7 @@ func (fake *FakeDeployment) ExportReleaseReturnsOnCall(i int, result1 director.E
 	}{result1, result2}
 }
 
-func (fake *FakeDeployment) FetchLogs(arg1 director.AllOrInstanceGroupOrInstanceSlug, arg2 []string, arg3 bool) (director.LogsResult, error) {
+func (fake *FakeDeployment) FetchLogs(arg1 director.AllOrInstanceGroupOrInstanceSlug, arg2 []string, arg3 string) (director.LogsResult, error) {
 	var arg2Copy []string
 	if arg2 != nil {
 		arg2Copy = make([]string, len(arg2))
@@ -1111,7 +1112,7 @@ func (fake *FakeDeployment) FetchLogs(arg1 director.AllOrInstanceGroupOrInstance
 	fake.fetchLogsArgsForCall = append(fake.fetchLogsArgsForCall, struct {
 		arg1 director.AllOrInstanceGroupOrInstanceSlug
 		arg2 []string
-		arg3 bool
+		arg3 string
 	}{arg1, arg2Copy, arg3})
 	stub := fake.FetchLogsStub
 	fakeReturns := fake.fetchLogsReturns
@@ -1132,13 +1133,13 @@ func (fake *FakeDeployment) FetchLogsCallCount() int {
 	return len(fake.fetchLogsArgsForCall)
 }
 
-func (fake *FakeDeployment) FetchLogsCalls(stub func(director.AllOrInstanceGroupOrInstanceSlug, []string, bool) (director.LogsResult, error)) {
+func (fake *FakeDeployment) FetchLogsCalls(stub func(director.AllOrInstanceGroupOrInstanceSlug, []string, string) (director.LogsResult, error)) {
 	fake.fetchLogsMutex.Lock()
 	defer fake.fetchLogsMutex.Unlock()
 	fake.FetchLogsStub = stub
 }
 
-func (fake *FakeDeployment) FetchLogsArgsForCall(i int) (director.AllOrInstanceGroupOrInstanceSlug, []string, bool) {
+func (fake *FakeDeployment) FetchLogsArgsForCall(i int) (director.AllOrInstanceGroupOrInstanceSlug, []string, string) {
 	fake.fetchLogsMutex.RLock()
 	defer fake.fetchLogsMutex.RUnlock()
 	argsForCall := fake.fetchLogsArgsForCall[i]
@@ -1572,7 +1573,7 @@ func (fake *FakeDeployment) ReleasesReturnsOnCall(i int, result1 []director.Rele
 	}{result1, result2}
 }
 
-func (fake *FakeDeployment) ResolveProblems(arg1 []director.ProblemAnswer) error {
+func (fake *FakeDeployment) ResolveProblems(arg1 []director.ProblemAnswer, arg2 map[string]string) error {
 	var arg1Copy []director.ProblemAnswer
 	if arg1 != nil {
 		arg1Copy = make([]director.ProblemAnswer, len(arg1))
@@ -1582,13 +1583,14 @@ func (fake *FakeDeployment) ResolveProblems(arg1 []director.ProblemAnswer) error
 	ret, specificReturn := fake.resolveProblemsReturnsOnCall[len(fake.resolveProblemsArgsForCall)]
 	fake.resolveProblemsArgsForCall = append(fake.resolveProblemsArgsForCall, struct {
 		arg1 []director.ProblemAnswer
-	}{arg1Copy})
+		arg2 map[string]string
+	}{arg1Copy, arg2})
 	stub := fake.ResolveProblemsStub
 	fakeReturns := fake.resolveProblemsReturns
-	fake.recordInvocation("ResolveProblems", []interface{}{arg1Copy})
+	fake.recordInvocation("ResolveProblems", []interface{}{arg1Copy, arg2})
 	fake.resolveProblemsMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
@@ -1602,17 +1604,17 @@ func (fake *FakeDeployment) ResolveProblemsCallCount() int {
 	return len(fake.resolveProblemsArgsForCall)
 }
 
-func (fake *FakeDeployment) ResolveProblemsCalls(stub func([]director.ProblemAnswer) error) {
+func (fake *FakeDeployment) ResolveProblemsCalls(stub func([]director.ProblemAnswer, map[string]string) error) {
 	fake.resolveProblemsMutex.Lock()
 	defer fake.resolveProblemsMutex.Unlock()
 	fake.ResolveProblemsStub = stub
 }
 
-func (fake *FakeDeployment) ResolveProblemsArgsForCall(i int) []director.ProblemAnswer {
+func (fake *FakeDeployment) ResolveProblemsArgsForCall(i int) ([]director.ProblemAnswer, map[string]string) {
 	fake.resolveProblemsMutex.RLock()
 	defer fake.resolveProblemsMutex.RUnlock()
 	argsForCall := fake.resolveProblemsArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeDeployment) ResolveProblemsReturns(result1 error) {
@@ -2481,74 +2483,6 @@ func (fake *FakeDeployment) VariablesReturnsOnCall(i int, result1 []director.Var
 func (fake *FakeDeployment) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.attachDiskMutex.RLock()
-	defer fake.attachDiskMutex.RUnlock()
-	fake.cleanUpSSHMutex.RLock()
-	defer fake.cleanUpSSHMutex.RUnlock()
-	fake.cloudConfigMutex.RLock()
-	defer fake.cloudConfigMutex.RUnlock()
-	fake.deleteMutex.RLock()
-	defer fake.deleteMutex.RUnlock()
-	fake.deleteSnapshotMutex.RLock()
-	defer fake.deleteSnapshotMutex.RUnlock()
-	fake.deleteSnapshotsMutex.RLock()
-	defer fake.deleteSnapshotsMutex.RUnlock()
-	fake.deleteVMMutex.RLock()
-	defer fake.deleteVMMutex.RUnlock()
-	fake.diffMutex.RLock()
-	defer fake.diffMutex.RUnlock()
-	fake.enableResurrectionMutex.RLock()
-	defer fake.enableResurrectionMutex.RUnlock()
-	fake.errandsMutex.RLock()
-	defer fake.errandsMutex.RUnlock()
-	fake.exportReleaseMutex.RLock()
-	defer fake.exportReleaseMutex.RUnlock()
-	fake.fetchLogsMutex.RLock()
-	defer fake.fetchLogsMutex.RUnlock()
-	fake.ignoreMutex.RLock()
-	defer fake.ignoreMutex.RUnlock()
-	fake.instanceInfosMutex.RLock()
-	defer fake.instanceInfosMutex.RUnlock()
-	fake.instancesMutex.RLock()
-	defer fake.instancesMutex.RUnlock()
-	fake.manifestMutex.RLock()
-	defer fake.manifestMutex.RUnlock()
-	fake.nameMutex.RLock()
-	defer fake.nameMutex.RUnlock()
-	fake.recreateMutex.RLock()
-	defer fake.recreateMutex.RUnlock()
-	fake.releasesMutex.RLock()
-	defer fake.releasesMutex.RUnlock()
-	fake.resolveProblemsMutex.RLock()
-	defer fake.resolveProblemsMutex.RUnlock()
-	fake.restartMutex.RLock()
-	defer fake.restartMutex.RUnlock()
-	fake.runErrandMutex.RLock()
-	defer fake.runErrandMutex.RUnlock()
-	fake.scanForProblemsMutex.RLock()
-	defer fake.scanForProblemsMutex.RUnlock()
-	fake.setUpSSHMutex.RLock()
-	defer fake.setUpSSHMutex.RUnlock()
-	fake.snapshotsMutex.RLock()
-	defer fake.snapshotsMutex.RUnlock()
-	fake.startMutex.RLock()
-	defer fake.startMutex.RUnlock()
-	fake.stemcellsMutex.RLock()
-	defer fake.stemcellsMutex.RUnlock()
-	fake.stopMutex.RLock()
-	defer fake.stopMutex.RUnlock()
-	fake.takeSnapshotMutex.RLock()
-	defer fake.takeSnapshotMutex.RUnlock()
-	fake.takeSnapshotsMutex.RLock()
-	defer fake.takeSnapshotsMutex.RUnlock()
-	fake.teamsMutex.RLock()
-	defer fake.teamsMutex.RUnlock()
-	fake.updateMutex.RLock()
-	defer fake.updateMutex.RUnlock()
-	fake.vMInfosMutex.RLock()
-	defer fake.vMInfosMutex.RUnlock()
-	fake.variablesMutex.RLock()
-	defer fake.variablesMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

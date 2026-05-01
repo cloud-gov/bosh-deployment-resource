@@ -1,7 +1,7 @@
 package ui
 
 import (
-	. "github.com/cloudfoundry/bosh-cli/v7/ui/table"
+	"github.com/cloudfoundry/bosh-cli/v7/ui/table"
 )
 
 type NonTTYUI struct {
@@ -23,18 +23,22 @@ func (ui *NonTTYUI) EndLinef(pattern string, args ...interface{})   {}
 func (ui *NonTTYUI) PrintBlock(block []byte)      { ui.parent.PrintBlock(block) }
 func (ui *NonTTYUI) PrintErrorBlock(block string) { ui.parent.PrintErrorBlock(block) }
 
-func (ui *NonTTYUI) PrintTable(table Table) {
+func (ui *NonTTYUI) PrintTable(table table.Table) {
 	ui.printTableHeader(&table)
 	ui.parent.PrintTable(table)
 }
 
-func (ui *NonTTYUI) PrintTableFiltered(table Table, filterHeader []Header) {
+func (ui *NonTTYUI) PrintTableFiltered(table table.Table, filterHeader []table.Header) {
 	ui.printTableHeader(&table)
 	ui.parent.PrintTableFiltered(table, filterHeader)
 }
 
 func (ui *NonTTYUI) AskForText(label string) (string, error) {
 	return ui.parent.AskForText(label)
+}
+
+func (ui *NonTTYUI) AskForTextWithDefaultValue(label, defaultValue string) (string, error) {
+	return ui.parent.AskForTextWithDefaultValue(label, defaultValue)
 }
 
 func (ui *NonTTYUI) AskForChoice(label string, options []string) (int, error) {
@@ -49,6 +53,10 @@ func (ui *NonTTYUI) AskForConfirmation() error {
 	return ui.parent.AskForConfirmation()
 }
 
+func (ui *NonTTYUI) AskForConfirmationWithLabel(label string) error {
+	return ui.parent.AskForConfirmationWithLabel(label)
+}
+
 func (ui *NonTTYUI) IsInteractive() bool {
 	return ui.parent.IsInteractive()
 }
@@ -57,7 +65,7 @@ func (ui *NonTTYUI) Flush() {
 	ui.parent.Flush()
 }
 
-func (ui *NonTTYUI) printTableHeader(table *Table) {
+func (ui *NonTTYUI) printTableHeader(table *table.Table) {
 	// hide decorations
 	table.Title = ""
 	table.Notes = nil

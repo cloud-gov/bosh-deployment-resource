@@ -5,9 +5,10 @@ import (
 	"sort"
 	"strings"
 
-	. "github.com/cloudfoundry/bosh-cli/v7/cmd/opts"
-	boshdir "github.com/cloudfoundry/bosh-cli/v7/director"
 	bosherr "github.com/cloudfoundry/bosh-utils/errors"
+
+	. "github.com/cloudfoundry/bosh-cli/v7/cmd/opts" //nolint:staticcheck
+	boshdir "github.com/cloudfoundry/bosh-cli/v7/director"
 )
 
 type ExportReleaseCmd struct {
@@ -72,8 +73,7 @@ func (c ExportReleaseCmd) ensureJobsValidForRelease(jobs []string, rel boshdir.R
 	}
 	for _, job := range jobs {
 		if !contains(releaseJobs, job) {
-			return fmt.Errorf(
-				"Job '%s' for release '%s' doesn't exist", job, rel)
+			return fmt.Errorf("Job '%s' for release '%s' doesn't exist", job, rel) //nolint:staticcheck
 		}
 	}
 	return nil

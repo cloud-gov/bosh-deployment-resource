@@ -1,13 +1,15 @@
 package pkg
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
 
+	bosherr "github.com/cloudfoundry/bosh-utils/errors"
+
 	biindex "github.com/cloudfoundry/bosh-cli/v7/index"
 	birelpkg "github.com/cloudfoundry/bosh-cli/v7/release/pkg"
-	bosherr "github.com/cloudfoundry/bosh-utils/errors"
 )
 
 type CompiledPackageRecord struct {
@@ -43,7 +45,7 @@ func (cpr *compiledPackageRepo) Find(pkg birelpkg.Compilable) (CompiledPackageRe
 
 	err := cpr.index.Find(cpr.pkgKey(pkg), &record)
 	if err != nil {
-		if err == biindex.ErrNotFound {
+		if errors.Is(err, biindex.ErrNotFound) {
 			return record, false, nil
 		}
 

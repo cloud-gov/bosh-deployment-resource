@@ -3,14 +3,14 @@ package ui
 import (
 	boshlog "github.com/cloudfoundry/bosh-utils/logger"
 
-	. "github.com/cloudfoundry/bosh-cli/v7/ui/table"
+	"github.com/cloudfoundry/bosh-cli/v7/ui/table"
 )
 
 type ConfUI struct {
 	parent      UI
 	isTTY       bool
 	logger      boshlog.Logger
-	showColumns []Header
+	showColumns []table.Header
 }
 
 func NewConfUI(logger boshlog.Logger) *ConfUI {
@@ -48,7 +48,7 @@ func (ui *ConfUI) EnableJSON() {
 	ui.parent = NewJSONUI(ui.parent, ui.logger)
 }
 
-func (ui *ConfUI) ShowColumns(columns []Header) {
+func (ui *ConfUI) ShowColumns(columns []table.Header) {
 	ui.showColumns = columns
 }
 
@@ -80,22 +80,22 @@ func (ui *ConfUI) PrintErrorBlock(block string) {
 	ui.parent.PrintErrorBlock(block)
 }
 
-func (ui *ConfUI) PrintTable(table Table) {
+func (ui *ConfUI) PrintTable(table table.Table) {
 	if len(ui.showColumns) > 0 {
 		err := table.SetColumnVisibility(ui.showColumns)
 		if err != nil {
-			panic(err)
+			ui.parent.PrintErrorBlock(err.Error())
 		}
 	}
 
 	ui.parent.PrintTable(table)
 }
 
-func (ui *ConfUI) PrintTableFiltered(table Table, filterHeader []Header) {
+func (ui *ConfUI) PrintTableFiltered(table table.Table, filterHeader []table.Header) {
 	if len(ui.showColumns) > 0 {
 		err := table.SetColumnVisibilityFiltered(ui.showColumns, filterHeader)
 		if err != nil {
-			panic(err)
+			ui.parent.PrintErrorBlock(err.Error())
 		}
 	}
 
@@ -104,6 +104,10 @@ func (ui *ConfUI) PrintTableFiltered(table Table, filterHeader []Header) {
 
 func (ui *ConfUI) AskForText(label string) (string, error) {
 	return ui.parent.AskForText(label)
+}
+
+func (ui *ConfUI) AskForTextWithDefaultValue(label, defaultValue string) (string, error) {
+	return ui.parent.AskForTextWithDefaultValue(label, defaultValue)
 }
 
 func (ui *ConfUI) AskForChoice(label string, options []string) (int, error) {
@@ -116,6 +120,10 @@ func (ui *ConfUI) AskForPassword(label string) (string, error) {
 
 func (ui *ConfUI) AskForConfirmation() error {
 	return ui.parent.AskForConfirmation()
+}
+
+func (ui *ConfUI) AskForConfirmationWithLabel(label string) error {
+	return ui.parent.AskForConfirmationWithLabel(label)
 }
 
 func (ui *ConfUI) IsInteractive() bool {

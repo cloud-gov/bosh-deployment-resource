@@ -1,8 +1,9 @@
 package resource
 
 import (
-	"github.com/cloudfoundry/bosh-cli/v7/crypto"
 	crypto2 "github.com/cloudfoundry/bosh-utils/crypto"
+
+	"github.com/cloudfoundry/bosh-cli/v7/crypto"
 )
 
 // You only need **one** of these per package!
@@ -23,6 +24,7 @@ type ArchiveFactoryArgs struct {
 	PrepFiles      []File
 	Chunks         []string
 	FollowSymlinks bool
+	NoCompression  bool
 }
 
 //counterfeiter:generate . ArchiveIndex
@@ -36,6 +38,7 @@ type ArchiveIndex interface {
 
 type Resource interface {
 	Name() string
+	Prefix(prefix string)
 	Fingerprint() string
 
 	ArchivePath() string

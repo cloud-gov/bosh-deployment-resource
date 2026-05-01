@@ -3,7 +3,7 @@ package ui
 import (
 	"fmt"
 
-	. "github.com/cloudfoundry/bosh-cli/v7/ui/table"
+	"github.com/cloudfoundry/bosh-cli/v7/ui/table"
 )
 
 type indentingUI struct {
@@ -38,16 +38,20 @@ func (ui *indentingUI) PrintErrorBlock(block string) {
 	ui.parent.PrintErrorBlock(block)
 }
 
-func (ui *indentingUI) PrintTable(table Table) {
+func (ui *indentingUI) PrintTable(table table.Table) {
 	ui.parent.PrintTable(table)
 }
 
-func (ui *indentingUI) PrintTableFiltered(table Table, filterHeader []Header) {
+func (ui *indentingUI) PrintTableFiltered(table table.Table, filterHeader []table.Header) {
 	ui.parent.PrintTableFiltered(table, filterHeader)
 }
 
 func (ui *indentingUI) AskForText(label string) (string, error) {
 	return ui.parent.AskForText(label)
+}
+
+func (ui *indentingUI) AskForTextWithDefaultValue(label, defaultValue string) (string, error) {
+	return ui.parent.AskForTextWithDefaultValue(label, defaultValue)
 }
 
 func (ui *indentingUI) AskForChoice(label string, options []string) (int, error) {
@@ -60,6 +64,10 @@ func (ui *indentingUI) AskForPassword(label string) (string, error) {
 
 func (ui *indentingUI) AskForConfirmation() error {
 	return ui.parent.AskForConfirmation()
+}
+
+func (ui *indentingUI) AskForConfirmationWithLabel(label string) error {
+	return ui.parent.AskForConfirmationWithLabel(label)
 }
 
 func (ui *indentingUI) IsInteractive() bool {

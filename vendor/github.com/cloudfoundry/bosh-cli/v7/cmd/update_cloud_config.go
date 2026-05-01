@@ -3,7 +3,7 @@ package cmd
 import (
 	bosherr "github.com/cloudfoundry/bosh-utils/errors"
 
-	. "github.com/cloudfoundry/bosh-cli/v7/cmd/opts"
+	. "github.com/cloudfoundry/bosh-cli/v7/cmd/opts" //nolint:staticcheck
 	boshdir "github.com/cloudfoundry/bosh-cli/v7/director"
 	boshtpl "github.com/cloudfoundry/bosh-cli/v7/director/template"
 	boshui "github.com/cloudfoundry/bosh-cli/v7/ui"
@@ -21,12 +21,12 @@ func NewUpdateCloudConfigCmd(ui boshui.UI, director boshdir.Director) UpdateClou
 func (c UpdateCloudConfigCmd) Run(opts UpdateCloudConfigOpts) error {
 	tpl := boshtpl.NewTemplate(opts.Args.CloudConfig.Bytes)
 
-	bytes, err := tpl.Evaluate(opts.VarFlags.AsVariables(), opts.OpsFlags.AsOp(), boshtpl.EvaluateOpts{})
+	bytes, err := tpl.Evaluate(opts.VarFlags.AsVariables(), opts.OpsFlags.AsOp(), boshtpl.EvaluateOpts{}) //nolint:staticcheck
 	if err != nil {
 		return bosherr.WrapErrorf(err, "Evaluating cloud config")
 	}
 
-	cloudConfigDiff, err := c.director.DiffCloudConfig(bytes)
+	cloudConfigDiff, err := c.director.DiffCloudConfig(opts.Name, bytes)
 	if err != nil {
 		return err
 	}
@@ -39,5 +39,5 @@ func (c UpdateCloudConfigCmd) Run(opts UpdateCloudConfigOpts) error {
 		return err
 	}
 
-	return c.director.UpdateCloudConfig(bytes)
+	return c.director.UpdateCloudConfig(opts.Name, bytes)
 }

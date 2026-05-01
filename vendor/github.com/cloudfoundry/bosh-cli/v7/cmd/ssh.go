@@ -1,17 +1,23 @@
 package cmd
 
 import (
-	. "github.com/cloudfoundry/bosh-cli/v7/cmd/opts"
+	"errors"
+	"fmt"
+
+	bihttpagent "github.com/cloudfoundry/bosh-agent/v2/agentclient/http"
+	bosherr "github.com/cloudfoundry/bosh-utils/errors"
+	boshlog "github.com/cloudfoundry/bosh-utils/logger"
+
+	. "github.com/cloudfoundry/bosh-cli/v7/cmd/opts" //nolint:staticcheck
 	boshdir "github.com/cloudfoundry/bosh-cli/v7/director"
 	boshssh "github.com/cloudfoundry/bosh-cli/v7/ssh"
 	boshui "github.com/cloudfoundry/bosh-cli/v7/ui"
-	bosherr "github.com/cloudfoundry/bosh-utils/errors"
-	boshuuid "github.com/cloudfoundry/bosh-utils/uuid"
 )
+
+const logTag = "ssh"
 
 type SSHCmd struct {
 	deployment       boshdir.Deployment
-	uuidGen          boshuuid.Generator
 	intSSHRunner     boshssh.Runner
 	nonIntSSHRunner  boshssh.Runner
 	resultsSSHRunner boshssh.Runner
@@ -20,7 +26,6 @@ type SSHCmd struct {
 }
 
 func NewSSHCmd(
-	uuidGen boshuuid.Generator,
 	intSSHRunner boshssh.Runner,
 	nonIntSSHRunner boshssh.Runner,
 	resultsSSHRunner boshssh.Runner,
@@ -28,7 +33,6 @@ func NewSSHCmd(
 	hostBuilder boshssh.HostBuilder,
 ) SSHCmd {
 	return SSHCmd{
-		uuidGen:          uuidGen,
 		intSSHRunner:     intSSHRunner,
 		nonIntSSHRunner:  nonIntSSHRunner,
 		resultsSSHRunner: resultsSSHRunner,
@@ -44,7 +48,7 @@ func (c SSHCmd) Run(opts SSHOpts, deploymentFetcher boshssh.DeploymentFetcher) e
 		}
 	}
 
-	sshOpts, connOpts, err := opts.GatewayFlags.AsSSHOpts()
+	sshOpts, connOpts, err := opts.GatewayFlags.AsSSHOpts() //nolint:staticcheck
 	if err != nil {
 		return err
 	}
@@ -67,7 +71,7 @@ func (c SSHCmd) Run(opts SSHOpts, deploymentFetcher boshssh.DeploymentFetcher) e
 		}
 
 		defer func() {
-			_ = c.deployment.CleanUpSSH(opts.Args.Slug, sshOpts)
+			_ = c.deployment.CleanUpSSH(opts.Args.Slug, sshOpts) //nolint:errcheck
 		}()
 	} else {
 		// no automatic source of host key
@@ -88,6 +92,96 @@ func (c SSHCmd) Run(opts SSHOpts, deploymentFetcher boshssh.DeploymentFetcher) e
 			GatewayHost:     connOpts.GatewayHost,
 		}
 	}
+
+	var runner boshssh.Runner
+
+	if opts.Results {
+		runner = c.resultsSSHRunner
+	} else if !c.ui.IsInteractive() || len(opts.Command) > 0 {
+		runner = c.nonIntSSHRunner
+	} else {
+		runner = c.intSSHRunner
+	}
+
+	err = runner.Run(connOpts, result, opts.Command)
+	if err != nil {
+		return bosherr.WrapErrorf(err, "Running SSH")
+	}
+
+	return nil
+}
+
+type EnvSSHCmd struct {
+	agentClientFactory bihttpagent.AgentClientFactory
+	intSSHRunner       boshssh.Runner
+	nonIntSSHRunner    boshssh.Runner
+	resultsSSHRunner   boshssh.Runner
+	ui                 boshui.UI
+	logger             boshlog.Logger
+}
+
+func NewEnvSSHCmd(
+	agentClientFactory bihttpagent.AgentClientFactory,
+	intSSHRunner boshssh.Runner,
+	nonIntSSHRunner boshssh.Runner,
+	resultsSSHRunner boshssh.Runner,
+	ui boshui.UI,
+	logger boshlog.Logger,
+) EnvSSHCmd {
+	return EnvSSHCmd{
+		agentClientFactory: agentClientFactory,
+		intSSHRunner:       intSSHRunner,
+		nonIntSSHRunner:    nonIntSSHRunner,
+		resultsSSHRunner:   resultsSSHRunner,
+		ui:                 ui,
+		logger:             logger,
+	}
+}
+
+func (c EnvSSHCmd) Run(opts SSHOpts) error {
+	if opts.PrivateKey.Bytes != nil {
+		return errors.New("the --private-key flag is not supported in combination with the --director flag")
+	}
+	if opts.Endpoint == "" || opts.Certificate == "" {
+		return errors.New("the --director flag requires both the --agent-endpoint and --agent-certificate flags to be set")
+	}
+
+	agentClient, err := c.agentClientFactory.NewAgentClient("bosh-cli", opts.Endpoint, opts.Certificate)
+	if err != nil {
+		return err
+	}
+
+	sshOpts, connOpts, err := opts.GatewayFlags.AsSSHOpts() //nolint:staticcheck
+	if err != nil {
+		return err
+	}
+
+	connOpts.RawOpts = opts.RawOpts.AsStrings()
+	agentResult, err := agentClient.SetUpSSH(sshOpts.Username, sshOpts.PublicKey)
+	if err != nil {
+		return err
+	}
+	result := boshdir.SSHResult{
+		Hosts: []boshdir.Host{
+			{
+				Username:      sshOpts.Username,
+				Host:          agentResult.Ip,
+				HostPublicKey: agentResult.HostPublicKey,
+				Job:           "create-env-vm",
+				IndexOrID:     "0",
+			},
+		},
+	}
+
+	defer func() {
+		_, cleanupErr := agentClient.CleanUpSSH(sshOpts.Username)
+		if cleanupErr != nil {
+			c.logger.Warn(logTag, fmt.Sprintf("SSH cleanup failed for user %s. Artifacts may be left over on the VM: %v", sshOpts.Username, cleanupErr))
+		}
+	}()
+
+	// host key will be returned by agent over HTTPS
+	connOpts.RawOpts = append(connOpts.RawOpts, "-o", "StrictHostKeyChecking=yes")
 
 	var runner boshssh.Runner
 

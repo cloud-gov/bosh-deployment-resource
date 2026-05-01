@@ -3,7 +3,10 @@ package state
 import (
 	"errors"
 
-	agentclient "github.com/cloudfoundry/bosh-agent/agentclient"
+	"github.com/cloudfoundry/bosh-agent/v2/agentclient"
+	bosherr "github.com/cloudfoundry/bosh-utils/errors"
+	boshlog "github.com/cloudfoundry/bosh-utils/logger"
+	biproperty "github.com/cloudfoundry/bosh-utils/property"
 
 	biblobstore "github.com/cloudfoundry/bosh-cli/v7/blobstore"
 	bideplmanifest "github.com/cloudfoundry/bosh-cli/v7/deployment/manifest"
@@ -12,9 +15,6 @@ import (
 	bistatejob "github.com/cloudfoundry/bosh-cli/v7/state/job"
 	bitemplate "github.com/cloudfoundry/bosh-cli/v7/templatescompiler"
 	biui "github.com/cloudfoundry/bosh-cli/v7/ui"
-	bosherr "github.com/cloudfoundry/bosh-utils/errors"
-	boshlog "github.com/cloudfoundry/bosh-utils/logger"
-	biproperty "github.com/cloudfoundry/bosh-utils/property"
 )
 
 type Builder interface {
@@ -225,8 +225,8 @@ func (b *builder) renderJobTemplates(
 
 func (b *builder) defaultAddress(networkRefs []NetworkRef, agentState agentclient.AgentState) (string, error) {
 
-	if (networkRefs == nil) || (len(networkRefs) == 0) {
-		return "", errors.New("Must specify network")
+	if len(networkRefs) == 0 {
+		return "", errors.New("Must specify network") //nolint:staticcheck
 	}
 
 	if len(networkRefs) == 1 {
@@ -245,11 +245,11 @@ func (b *builder) defaultAddress(networkRefs []NetworkRef, agentState agentclien
 		}
 	}
 
-	return "", errors.New("Must specify default network")
+	return "", errors.New("Must specify default network") //nolint:staticcheck
 }
 
 func networkIp(networkRef NetworkRef, agentState agentclient.AgentState) string {
-	if "dynamic" == networkRef.Interface["type"].(string) {
+	if "dynamic" == networkRef.Interface["type"].(string) { //nolint:staticcheck
 		return agentState.NetworkSpecs[networkRef.Name].IP
 	}
 

@@ -3,22 +3,25 @@ package cmd
 import (
 	"fmt"
 	"path/filepath"
+	"time"
 
+	bihttpagent "github.com/cloudfoundry/bosh-agent/v2/agentclient/http"
 	"github.com/cppforlife/go-patch/patch"
 
 	cmdconf "github.com/cloudfoundry/bosh-cli/v7/cmd/config"
+	. "github.com/cloudfoundry/bosh-cli/v7/cmd/opts" //nolint:staticcheck
 	"github.com/cloudfoundry/bosh-cli/v7/crypto"
 	boshdir "github.com/cloudfoundry/bosh-cli/v7/director"
 	boshtpl "github.com/cloudfoundry/bosh-cli/v7/director/template"
+	"github.com/cloudfoundry/bosh-cli/v7/pcap"
 	boshrel "github.com/cloudfoundry/bosh-cli/v7/release"
 	boshreldir "github.com/cloudfoundry/bosh-cli/v7/releasedir"
 	boshssh "github.com/cloudfoundry/bosh-cli/v7/ssh"
 	bistemcell "github.com/cloudfoundry/bosh-cli/v7/stemcell"
 	boshui "github.com/cloudfoundry/bosh-cli/v7/ui"
+	boshtbl "github.com/cloudfoundry/bosh-cli/v7/ui/table"
 	boshuit "github.com/cloudfoundry/bosh-cli/v7/ui/task"
 
-	. "github.com/cloudfoundry/bosh-cli/v7/cmd/opts"
-	boshtbl "github.com/cloudfoundry/bosh-cli/v7/ui/table"
 	boshcrypto "github.com/cloudfoundry/bosh-utils/crypto"
 	boshfu "github.com/cloudfoundry/bosh-utils/fileutil"
 )
@@ -68,7 +71,7 @@ func (c Cmd) Execute() (cmdErr error) {
 
 	case *CreateEnvOpts:
 		envProvider := func(manifestPath string, statePath string, vars boshtpl.Variables, op patch.Op) DeploymentPreparer {
-			return NewEnvFactory(deps, manifestPath, statePath, vars, op, opts.RecreatePersistentDisks).Preparer()
+			return NewEnvFactory(deps, manifestPath, statePath, vars, op, opts.RecreatePersistentDisks, opts.PackageDir).Preparer()
 		}
 
 		stage := boshui.NewStage(deps.UI, deps.Time, deps.Logger)
@@ -76,7 +79,7 @@ func (c Cmd) Execute() (cmdErr error) {
 
 	case *DeleteEnvOpts:
 		envProvider := func(manifestPath string, statePath string, vars boshtpl.Variables, op patch.Op) DeploymentDeleter {
-			return NewEnvFactory(deps, manifestPath, statePath, vars, op, false).Deleter()
+			return NewEnvFactory(deps, manifestPath, statePath, vars, op, false, opts.PackageDir).Deleter()
 		}
 
 		stage := boshui.NewStage(deps.UI, deps.Time, deps.Logger)
@@ -84,7 +87,7 @@ func (c Cmd) Execute() (cmdErr error) {
 
 	case *StopEnvOpts:
 		envProvider := func(manifestPath string, statePath string, vars boshtpl.Variables, op patch.Op) DeploymentStateManager {
-			return NewEnvFactory(deps, manifestPath, statePath, vars, op, false).StateManager()
+			return NewEnvFactory(deps, manifestPath, statePath, vars, op, false, "").StateManager()
 		}
 
 		stage := boshui.NewStage(deps.UI, deps.Time, deps.Logger)
@@ -92,7 +95,7 @@ func (c Cmd) Execute() (cmdErr error) {
 
 	case *StartEnvOpts:
 		envProvider := func(manifestPath string, statePath string, vars boshtpl.Variables, op patch.Op) DeploymentStateManager {
-			return NewEnvFactory(deps, manifestPath, statePath, vars, op, false).StateManager()
+			return NewEnvFactory(deps, manifestPath, statePath, vars, op, false, "").StateManager()
 		}
 
 		stage := boshui.NewStage(deps.UI, deps.Time, deps.Logger)
@@ -205,7 +208,7 @@ func (c Cmd) Execute() (cmdErr error) {
 		stemcellReader := bistemcell.NewReader(deps.Compressor, deps.FS)
 		stemcellExtractor := bistemcell.NewExtractor(stemcellReader, deps.FS)
 
-		return NewRepackStemcellCmd(deps.UI, deps.FS, stemcellExtractor).Run(*opts)
+		return NewRepackStemcellCmd(stemcellExtractor).Run(*opts)
 
 	case *InspectStemcellTarballOpts:
 		stemcellArchiveFactory := func(path string) boshdir.StemcellArchive {
@@ -221,7 +224,19 @@ func (c Cmd) Execute() (cmdErr error) {
 		return NewErrandsCmd(deps.UI, c.deployment()).Run()
 
 	case *RunErrandOpts:
-		director, deployment := c.directorAndDeployment()
+		sess, ok := c.session().(*SessionImpl)
+		if !ok {
+			return fmt.Errorf("internal error: expected *SessionImpl")
+		}
+		director, err := sess.Director()
+		c.panicIfErr(err)
+		deployment, err := sess.Deployment()
+		c.panicIfErr(err)
+
+		if opts.WithHeartbeat != nil && sess.taskReporter != nil {
+			sess.taskReporter.EnableWithHeartbeat(time.Duration(*opts.WithHeartbeat) * time.Second)
+		}
+
 		downloader := NewUIDownloader(director, deps.Time, deps.FS, deps.UI)
 		return NewRunErrandCmd(deployment, downloader, deps.UI).Run(*opts)
 
@@ -277,7 +292,7 @@ func (c Cmd) Execute() (cmdErr error) {
 		return NewDeleteConfigCmd(deps.UI, c.director()).Run(*opts)
 
 	case *CloudConfigOpts:
-		return NewCloudConfigCmd(deps.UI, c.director()).Run()
+		return NewCloudConfigCmd(deps.UI, c.director()).Run(*opts)
 
 	case *UpdateCloudConfigOpts:
 		return NewUpdateCloudConfigCmd(deps.UI, c.director()).Run(*opts)
@@ -337,7 +352,7 @@ func (c Cmd) Execute() (cmdErr error) {
 	case *DeployOpts:
 		director, deployment := c.directorAndDeployment()
 		releaseManager := c.releaseManager(director)
-		return NewDeployCmd(deps.UI, deployment, releaseManager).Run(*opts)
+		return NewDeployCmd(deps.UI, deployment, releaseManager, director).Run(*opts)
 
 	case *StartOpts:
 		return NewStartCmd(deps.UI, c.deployment()).Run(*opts)
@@ -354,29 +369,57 @@ func (c Cmd) Execute() (cmdErr error) {
 	case *CloudCheckOpts:
 		return NewCloudCheckCmd(c.deployment(), deps.UI).Run(*opts)
 
+	case *CreateRecoveryPlanOpts:
+		return NewCreateRecoveryPlanCmd(c.deployment(), deps.UI, deps.FS).Run(*opts)
+
+	case *RecoverOpts:
+		return NewRecoverCmd(c.deployment(), deps.UI, deps.FS).Run(*opts)
+
 	case *CleanUpOpts:
 		return NewCleanUpCmd(deps.UI, c.director()).Run(*opts)
 
+	case *PcapOpts:
+		return NewPcapCmd(c.deployment(), pcap.NewPcapRunner(deps.UI, deps.Logger), c.BoshOpts.Parallel).Run(*opts)
+
 	case *LogsOpts:
-		director, deployment := c.directorAndDeployment()
-		downloader := NewUIDownloader(director, deps.Time, deps.FS, deps.UI)
 		sshProvider := boshssh.NewProvider(deps.CmdRunner, deps.FS, deps.UI, deps.Logger)
 		nonIntSSHRunner := sshProvider.NewSSHRunner(false)
-		return NewLogsCmd(deployment, downloader, deps.UUIDGen, nonIntSSHRunner).Run(*opts)
+
+		if opts.TargetDirector {
+			agentClientFactory := bihttpagent.NewAgentClientFactory(1*time.Second, deps.Logger)
+			scpRunner := sshProvider.NewSCPRunner()
+			return NewEnvLogsCmd(agentClientFactory, nonIntSSHRunner, scpRunner, deps.FS, deps.Time, deps.UI).Run(*opts)
+		} else {
+			director, deployment := c.directorAndDeployment()
+			downloader := NewUIDownloader(director, deps.Time, deps.FS, deps.UI)
+			return NewLogsCmd(deployment, downloader, deps.UUIDGen, nonIntSSHRunner).Run(*opts)
+		}
 
 	case *SSHOpts:
 		sshProvider := boshssh.NewProvider(deps.CmdRunner, deps.FS, deps.UI, deps.Logger)
 		intSSHRunner := sshProvider.NewSSHRunner(true)
 		nonIntSSHRunner := sshProvider.NewSSHRunner(false)
 		resultsSSHRunner := sshProvider.NewResultsSSHRunner(false)
-		sshHostBuilder := boshssh.NewHostBuilder()
-		return NewSSHCmd(deps.UUIDGen, intSSHRunner, nonIntSSHRunner, resultsSSHRunner, deps.UI, sshHostBuilder).Run(*opts, c.getDeployment)
+
+		if opts.TargetDirector {
+			agentClientFactory := bihttpagent.NewAgentClientFactory(1*time.Second, deps.Logger)
+			return NewEnvSSHCmd(agentClientFactory, intSSHRunner, nonIntSSHRunner, resultsSSHRunner, deps.UI, deps.Logger).Run(*opts)
+		} else {
+			sshHostBuilder := boshssh.NewHostBuilder()
+			return NewSSHCmd(intSSHRunner, nonIntSSHRunner, resultsSSHRunner, deps.UI, sshHostBuilder).Run(*opts, c.getDeployment)
+		}
 
 	case *SCPOpts:
 		sshProvider := boshssh.NewProvider(deps.CmdRunner, deps.FS, deps.UI, deps.Logger)
 		scpRunner := sshProvider.NewSCPRunner()
-		sshHostBuilder := boshssh.NewHostBuilder()
-		return NewSCPCmd(deps.UUIDGen, scpRunner, deps.UI, sshHostBuilder).Run(*opts, c.getDeployment)
+
+		if opts.TargetDirector {
+			agentClientFactory := bihttpagent.NewAgentClientFactory(1*time.Second, deps.Logger)
+			return NewEnvSCPCmd(agentClientFactory, scpRunner).Run(*opts)
+		} else {
+			sshHostBuilder := boshssh.NewHostBuilder()
+			return NewSCPCmd(scpRunner, sshHostBuilder).Run(*opts, c.getDeployment)
+		}
 
 	case *ExportReleaseOpts:
 		director, deployment := c.directorAndDeployment()
@@ -471,7 +514,7 @@ func (c Cmd) Execute() (cmdErr error) {
 		return NewVariablesCmd(deps.UI, c.deployment()).Run(*opts)
 
 	default:
-		return fmt.Errorf("Unhandled command: %#v", c.Opts)
+		return fmt.Errorf("Unhandled command: %#v", c.Opts) //nolint:staticcheck
 	}
 }
 func (c Cmd) configureUI() {
@@ -515,7 +558,10 @@ func (c Cmd) config() cmdconf.Config {
 }
 
 func (c Cmd) session() Session {
-	return NewSessionFromOpts(c.BoshOpts, c.config(), c.deps.UI, true, true, c.deps.FS, c.deps.Logger)
+	return NewSessionImpl(
+		NewSessionContextImpl(c.BoshOpts, c.config(), c.deps.FS),
+		c.deps.UI, true, true, c.deps.Logger,
+	)
 }
 
 func (c Cmd) director() boshdir.Director {

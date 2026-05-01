@@ -1,15 +1,16 @@
 package cmd
 
 import (
-	. "github.com/cloudfoundry/bosh-cli/v7/cmd/opts"
+	crypto2 "github.com/cloudfoundry/bosh-utils/crypto"
+	boshfu "github.com/cloudfoundry/bosh-utils/fileutil"
+
+	. "github.com/cloudfoundry/bosh-cli/v7/cmd/opts" //nolint:staticcheck
 	"github.com/cloudfoundry/bosh-cli/v7/crypto"
 	boshrel "github.com/cloudfoundry/bosh-cli/v7/release"
 	boshjob "github.com/cloudfoundry/bosh-cli/v7/release/job"
 	"github.com/cloudfoundry/bosh-cli/v7/release/license"
 	boshpkg "github.com/cloudfoundry/bosh-cli/v7/release/pkg"
 	boshui "github.com/cloudfoundry/bosh-cli/v7/ui"
-	crypto2 "github.com/cloudfoundry/bosh-utils/crypto"
-	boshfu "github.com/cloudfoundry/bosh-utils/fileutil"
 )
 
 type RedigestReleaseCmd struct {

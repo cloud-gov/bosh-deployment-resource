@@ -1,7 +1,7 @@
 package ui
 
 import (
-	. "github.com/cloudfoundry/bosh-cli/v7/ui/table"
+	"github.com/cloudfoundry/bosh-cli/v7/ui/table"
 )
 
 type paddingUIMode int
@@ -52,12 +52,12 @@ func (ui *paddingUI) PrintErrorBlock(block string) {
 	ui.parent.PrintErrorBlock(block)
 }
 
-func (ui *paddingUI) PrintTable(table Table) {
+func (ui *paddingUI) PrintTable(table table.Table) {
 	ui.padBefore(paddingUIModeAuto)
 	ui.parent.PrintTable(table)
 }
 
-func (ui *paddingUI) PrintTableFiltered(table Table, filterHeader []Header) {
+func (ui *paddingUI) PrintTableFiltered(table table.Table, filterHeader []table.Header) {
 	ui.padBefore(paddingUIModeAuto)
 	ui.parent.PrintTableFiltered(table, filterHeader)
 }
@@ -65,6 +65,11 @@ func (ui *paddingUI) PrintTableFiltered(table Table, filterHeader []Header) {
 func (ui *paddingUI) AskForText(label string) (string, error) {
 	ui.padBefore(paddingUIModeAskText)
 	return ui.parent.AskForText(label)
+}
+
+func (ui *paddingUI) AskForTextWithDefaultValue(label, defaultValue string) (string, error) {
+	ui.padBefore(paddingUIModeAskText)
+	return ui.parent.AskForTextWithDefaultValue(label, defaultValue)
 }
 
 func (ui *paddingUI) AskForChoice(label string, options []string) (int, error) {
@@ -80,6 +85,11 @@ func (ui *paddingUI) AskForPassword(label string) (string, error) {
 func (ui *paddingUI) AskForConfirmation() error {
 	ui.padBefore(paddingUIModeAuto)
 	return ui.parent.AskForConfirmation()
+}
+
+func (ui *paddingUI) AskForConfirmationWithLabel(label string) error {
+	ui.padBefore(paddingUIModeAuto)
+	return ui.parent.AskForConfirmationWithLabel(label)
 }
 
 func (ui *paddingUI) IsInteractive() bool {

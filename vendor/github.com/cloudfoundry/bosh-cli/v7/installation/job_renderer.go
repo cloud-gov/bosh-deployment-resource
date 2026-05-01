@@ -1,14 +1,15 @@
 package installation
 
 import (
-	biinstallmanifest "github.com/cloudfoundry/bosh-cli/v7/installation/manifest"
-	bireljob "github.com/cloudfoundry/bosh-cli/v7/release/job"
-	bitemplate "github.com/cloudfoundry/bosh-cli/v7/templatescompiler"
-	biui "github.com/cloudfoundry/bosh-cli/v7/ui"
 	boshblob "github.com/cloudfoundry/bosh-utils/blobstore"
 	bosherr "github.com/cloudfoundry/bosh-utils/errors"
 	boshcmd "github.com/cloudfoundry/bosh-utils/fileutil"
 	biproperty "github.com/cloudfoundry/bosh-utils/property"
+
+	biinstallmanifest "github.com/cloudfoundry/bosh-cli/v7/installation/manifest"
+	bireljob "github.com/cloudfoundry/bosh-cli/v7/release/job"
+	bitemplate "github.com/cloudfoundry/bosh-cli/v7/templatescompiler"
+	biui "github.com/cloudfoundry/bosh-cli/v7/ui"
 )
 
 type JobRenderer interface {
@@ -60,10 +61,6 @@ func (b *jobRenderer) RenderAndUploadFrom(installationManifest biinstallmanifest
 		return nil, bosherr.WrapError(err, "Rendering job templates for installation")
 	}
 
-	if len(renderedJobRefs) != 1 {
-		return nil, bosherr.Error("Too many jobs rendered... oops?")
-	}
-
 	return renderedJobRefs, nil
 }
 
@@ -101,13 +98,13 @@ func (b *jobRenderer) renderJobTemplates(
 }
 
 func (b *jobRenderer) compressAndUpload(renderedJob bitemplate.RenderedJob) (RenderedJobRef, error) {
-	tarballPath, err := b.compressor.CompressFilesInDir(renderedJob.Path())
+	tarballPath, err := b.compressor.CompressFilesInDir(renderedJob.Path(), boshcmd.CompressorOptions{})
 	if err != nil {
 		return RenderedJobRef{}, bosherr.WrapError(err, "Compressing rendered job templates")
 	}
 
 	defer func() {
-		_ = b.compressor.CleanUp(tarballPath)
+		_ = b.compressor.CleanUp(tarballPath) //nolint:errcheck
 	}()
 
 	blobID, digest, err := b.blobstore.Create(tarballPath)

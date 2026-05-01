@@ -3,12 +3,12 @@ package releasedir
 import (
 	"io"
 
+	boshcrypto "github.com/cloudfoundry/bosh-utils/crypto"
 	semver "github.com/cppforlife/go-semi-semantic/version"
 
 	boshrel "github.com/cloudfoundry/bosh-cli/v7/release"
 	boshrelman "github.com/cloudfoundry/bosh-cli/v7/release/manifest"
 	boshpkg "github.com/cloudfoundry/bosh-cli/v7/release/pkg"
-	boshcrypto "github.com/cloudfoundry/bosh-utils/crypto"
 )
 
 // You only need **one** of these per package!
@@ -26,6 +26,9 @@ type ReleaseDir interface {
 	// DefaultName returns a string for the release.
 	DefaultName() (string, error)
 
+	// NoCompression returns a boolean indicating whether the release should be built with compression disabled.
+	NoCompression() bool
+
 	// NextDevVersion and NextFinalVersion returns a next version for the that name.
 	// It does not account for gaps and just plainly increments.
 	NextDevVersion(name string, timestamp bool) (semver.Version, error)
@@ -38,10 +41,15 @@ type ReleaseDir interface {
 	// BuildRelease builds a new version of the Release
 	// from the release directory by looking at jobs, packages, etc. directories.
 	BuildRelease(name string, version semver.Version, force bool) (boshrel.Release, error)
-	VendorPackage(*boshpkg.Package) error
+	VendorPackage(pkg *boshpkg.Package, prefix string) error
 
 	// FinalizeRelease adds the Release to the final list so that it's consumable by others.
 	FinalizeRelease(release boshrel.Release, force bool) error
+
+	// CheckNoCompressionMismatch checks if any packages have no_compression: true in their spec files
+	// but final.yml does not have no_compression: true. Returns true if there's a mismatch,
+	// along with a list of package names that have no_compression: true.
+	CheckNoCompressionMismatch() (bool, []string, error)
 }
 
 //counterfeiter:generate . Config
@@ -51,6 +59,7 @@ type Config interface {
 	SaveName(string) error
 
 	Blobstore() (string, map[string]interface{}, error)
+	NoCompression() bool
 }
 
 //counterfeiter:generate . Generator

@@ -1,33 +1,28 @@
 package cmd
 
 import (
-	bosherr "github.com/cloudfoundry/bosh-utils/errors"
-	boshuuid "github.com/cloudfoundry/bosh-utils/uuid"
+	"errors"
 
-	. "github.com/cloudfoundry/bosh-cli/v7/cmd/opts"
+	bihttpagent "github.com/cloudfoundry/bosh-agent/v2/agentclient/http"
+	bosherr "github.com/cloudfoundry/bosh-utils/errors"
+
+	. "github.com/cloudfoundry/bosh-cli/v7/cmd/opts" //nolint:staticcheck
 	boshdir "github.com/cloudfoundry/bosh-cli/v7/director"
 	boshssh "github.com/cloudfoundry/bosh-cli/v7/ssh"
-	biui "github.com/cloudfoundry/bosh-cli/v7/ui"
 )
 
 type SCPCmd struct {
 	deployment  boshdir.Deployment
-	uuidGen     boshuuid.Generator
 	scpRunner   boshssh.SCPRunner
-	ui          biui.UI
 	hostBuilder boshssh.HostBuilder
 }
 
 func NewSCPCmd(
-	uuidGen boshuuid.Generator,
 	scpRunner boshssh.SCPRunner,
-	ui biui.UI,
 	hostBuilder boshssh.HostBuilder,
 ) SCPCmd {
 	return SCPCmd{
-		uuidGen:     uuidGen,
 		scpRunner:   scpRunner,
-		ui:          ui,
 		hostBuilder: hostBuilder,
 	}
 }
@@ -40,7 +35,7 @@ func (c SCPCmd) Run(opts SCPOpts, deploymentFetcher boshssh.DeploymentFetcher) e
 		return err
 	}
 
-	sshOpts, connOpts, err := opts.GatewayFlags.AsSSHOpts()
+	sshOpts, connOpts, err := opts.GatewayFlags.AsSSHOpts() //nolint:staticcheck
 	if err != nil {
 		return err
 	}
@@ -61,7 +56,7 @@ func (c SCPCmd) Run(opts SCPOpts, deploymentFetcher boshssh.DeploymentFetcher) e
 		}
 
 		defer func() {
-			_ = c.deployment.CleanUpSSH(slug, sshOpts)
+			_ = c.deployment.CleanUpSSH(slug, sshOpts) //nolint:errcheck
 		}()
 	} else {
 		// no automatic source of host key
@@ -82,6 +77,72 @@ func (c SCPCmd) Run(opts SCPOpts, deploymentFetcher boshssh.DeploymentFetcher) e
 			GatewayHost:     connOpts.GatewayHost,
 		}
 	}
+
+	err = c.scpRunner.Run(connOpts, result, scpArgs)
+	if err != nil {
+		return bosherr.WrapErrorf(err, "Running SCP")
+	}
+
+	return nil
+}
+
+type EnvSCPCmd struct {
+	agentClientFactory bihttpagent.AgentClientFactory
+	scpRunner          boshssh.SCPRunner
+}
+
+func NewEnvSCPCmd(
+	agentClientFactory bihttpagent.AgentClientFactory,
+	scpRunner boshssh.SCPRunner,
+) EnvSCPCmd {
+	return EnvSCPCmd{
+		agentClientFactory: agentClientFactory,
+		scpRunner:          scpRunner,
+	}
+}
+
+func (c EnvSCPCmd) Run(opts SCPOpts) error {
+	if opts.PrivateKey.Bytes != nil {
+		return errors.New("the --private-key flag is not supported in combination with the --director flag")
+	}
+	if opts.Endpoint == "" || opts.Certificate == "" {
+		return errors.New("the --director flag requires both the --agent-endpoint and --agent-certificate flags to be set")
+	}
+
+	agentClient, err := c.agentClientFactory.NewAgentClient("bosh-cli", opts.Endpoint, opts.Certificate)
+	if err != nil {
+		return err
+	}
+
+	scpArgs := boshssh.NewSCPArgs(opts.Args.Paths, opts.Recursive)
+
+	sshOpts, connOpts, err := opts.GatewayFlags.AsSSHOpts() //nolint:staticcheck
+	if err != nil {
+		return err
+	}
+
+	agentResult, err := agentClient.SetUpSSH(sshOpts.Username, sshOpts.PublicKey)
+	if err != nil {
+		return err
+	}
+	result := boshdir.SSHResult{
+		Hosts: []boshdir.Host{
+			{
+				Username:      sshOpts.Username,
+				Host:          agentResult.Ip,
+				HostPublicKey: agentResult.HostPublicKey,
+				Job:           "create-env-vm",
+				IndexOrID:     "0",
+			},
+		},
+	}
+
+	defer func() {
+		_, _ = agentClient.CleanUpSSH(sshOpts.Username) //nolint:errcheck
+	}()
+
+	// host key will be returned by agent over HTTPS
+	connOpts.RawOpts = append(connOpts.RawOpts, "-o", "StrictHostKeyChecking=yes")
 
 	err = c.scpRunner.Run(connOpts, result, scpArgs)
 	if err != nil {

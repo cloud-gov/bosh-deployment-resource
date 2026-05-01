@@ -11,7 +11,7 @@ import (
 	"github.com/mattn/go-isatty"
 	"github.com/vito/go-interact/interact"
 
-	. "github.com/cloudfoundry/bosh-cli/v7/ui/table"
+	"github.com/cloudfoundry/bosh-cli/v7/ui/table"
 )
 
 type WriterUI struct {
@@ -91,14 +91,14 @@ func (ui *WriterUI) PrintErrorBlock(block string) {
 	}
 }
 
-func (ui *WriterUI) PrintTable(table Table) {
+func (ui *WriterUI) PrintTable(table table.Table) {
 	err := table.Print(ui.outWriter)
 	if err != nil {
 		ui.logger.Error(ui.logTag, "UI.PrintTable failed: %s", err)
 	}
 }
 
-func (ui *WriterUI) PrintTableFiltered(table Table, filterHeader []Header) {
+func (ui *WriterUI) PrintTableFiltered(table table.Table, filterHeader []table.Header) {
 	err := table.Print(ui.outWriter)
 	if err != nil {
 		ui.logger.Error(ui.logTag, "UI.PrintTable failed: %s", err)
@@ -107,6 +107,17 @@ func (ui *WriterUI) PrintTableFiltered(table Table, filterHeader []Header) {
 
 func (ui *WriterUI) AskForText(label string) (string, error) {
 	var text string
+
+	err := interact.NewInteraction(label).Resolve(&text)
+	if err != nil {
+		return "", bosherr.WrapError(err, "Asking for text")
+	}
+
+	return text, nil
+}
+
+func (ui *WriterUI) AskForTextWithDefaultValue(label, defaultValue string) (string, error) {
+	text := defaultValue
 
 	err := interact.NewInteraction(label).Resolve(&text)
 	if err != nil {
@@ -148,6 +159,21 @@ func (ui *WriterUI) AskForConfirmation() error {
 	falseByDefault := false
 
 	err := interact.NewInteraction("Continue?").Resolve(&falseByDefault)
+	if err != nil {
+		return bosherr.WrapError(err, "Asking for confirmation")
+	}
+
+	if !falseByDefault {
+		return errors.New("Stopped")
+	}
+
+	return nil
+}
+
+func (ui *WriterUI) AskForConfirmationWithLabel(label string) error {
+	falseByDefault := false
+
+	err := interact.NewInteraction(label).Resolve(&falseByDefault)
 	if err != nil {
 		return bosherr.WrapError(err, "Asking for confirmation")
 	}

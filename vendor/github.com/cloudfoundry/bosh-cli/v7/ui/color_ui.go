@@ -3,7 +3,7 @@ package ui
 import (
 	"github.com/fatih/color"
 
-	. "github.com/cloudfoundry/bosh-cli/v7/ui/table"
+	"github.com/cloudfoundry/bosh-cli/v7/ui/table"
 )
 
 type ColorUI struct {
@@ -46,13 +46,13 @@ func (ui *ColorUI) PrintErrorBlock(block string) {
 	ui.parent.PrintErrorBlock(ui.errFunc("%s", block))
 }
 
-func (ui *ColorUI) PrintTable(table Table) {
+func (ui *ColorUI) PrintTable(table table.Table) {
 	ui.printTableHeader(&table)
 
 	ui.parent.PrintTable(table)
 }
 
-func (ui *ColorUI) PrintTableFiltered(table Table, filterHeader []Header) {
+func (ui *ColorUI) PrintTableFiltered(table table.Table, filterHeader []table.Header) {
 	ui.printTableHeader(&table)
 
 	ui.parent.PrintTableFiltered(table, filterHeader)
@@ -60,6 +60,10 @@ func (ui *ColorUI) PrintTableFiltered(table Table, filterHeader []Header) {
 
 func (ui *ColorUI) AskForText(label string) (string, error) {
 	return ui.parent.AskForText(label)
+}
+
+func (ui *ColorUI) AskForTextWithDefaultValue(label, defaultValue string) (string, error) {
+	return ui.parent.AskForTextWithDefaultValue(label, defaultValue)
 }
 
 func (ui *ColorUI) AskForChoice(label string, options []string) (int, error) {
@@ -74,6 +78,10 @@ func (ui *ColorUI) AskForConfirmation() error {
 	return ui.parent.AskForConfirmation()
 }
 
+func (ui *ColorUI) AskForConfirmationWithLabel(label string) error {
+	return ui.parent.AskForConfirmationWithLabel(label)
+}
+
 func (ui *ColorUI) IsInteractive() bool {
 	return ui.parent.IsInteractive()
 }
@@ -82,7 +90,7 @@ func (ui *ColorUI) Flush() {
 	ui.parent.Flush()
 }
 
-func (ui *ColorUI) printTableHeader(table *Table) {
+func (ui *ColorUI) printTableHeader(table *table.Table) {
 	table.HeaderFormatFunc = ui.boldFunc
 
 	for k, s := range table.Sections {
@@ -100,8 +108,8 @@ func (ui *ColorUI) printTableHeader(table *Table) {
 	}
 }
 
-func (ui *ColorUI) colorValueFmt(val Value) Value {
-	if valFmt, ok := val.(ValueFmt); ok {
+func (ui *ColorUI) colorValueFmt(val table.Value) table.Value {
+	if valFmt, ok := val.(table.ValueFmt); ok {
 		if valFmt.Error {
 			valFmt.Func = ui.errFunc
 		} else {

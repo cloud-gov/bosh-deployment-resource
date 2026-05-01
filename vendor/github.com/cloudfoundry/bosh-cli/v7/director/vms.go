@@ -23,7 +23,6 @@ type VMInfo struct {
 
 	IPs        []string `json:"ips"`
 	Deployment string   `json:"deployment_name"`
-	DNS        []string `json:"dns"`
 
 	AZ              string      `json:"az"`
 	State           string      `json:"state"`
@@ -165,7 +164,7 @@ func (c Client) deploymentResourceInfos(deploymentName string, resourceType stri
 		err := json.Unmarshal([]byte(piece), &resp)
 		if err != nil {
 			return nil, bosherr.WrapErrorf(
-				err, "Unmarshaling %s info response: '%s'", strings.TrimSuffix(resourceType, "s"), string(piece))
+				err, "Unmarshaling %s info response: '%s'", strings.TrimSuffix(resourceType, "s"), piece)
 		}
 
 		resp.Deployment = deploymentName

@@ -1,9 +1,12 @@
 package stemcell
 
 import (
+	"errors"
+
+	bosherr "github.com/cloudfoundry/bosh-utils/errors"
+
 	bicloud "github.com/cloudfoundry/bosh-cli/v7/cloud"
 	biconfig "github.com/cloudfoundry/bosh-cli/v7/config"
-	bosherr "github.com/cloudfoundry/bosh-utils/errors"
 )
 
 type CloudStemcell interface {
@@ -70,7 +73,8 @@ func (s *cloudStemcell) Delete() error {
 	deleteErr := s.cloud.DeleteStemcell(s.cid)
 	if deleteErr != nil {
 		// allow StemcellNotFoundError for idempotency
-		cloudErr, ok := deleteErr.(bicloud.Error)
+		var cloudErr bicloud.Error
+		ok := errors.As(deleteErr, &cloudErr)
 		if !ok || cloudErr.Type() != bicloud.StemcellNotFoundError {
 			return bosherr.WrapError(deleteErr, "Deleting stemcell from cloud")
 		}

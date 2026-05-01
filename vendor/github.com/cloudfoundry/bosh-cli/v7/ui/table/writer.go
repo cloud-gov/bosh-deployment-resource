@@ -54,7 +54,7 @@ func (w *Writer) Write(headers []Header, vals []Value) {
 
 		var rowsInCol []writerCell
 
-		cleanStr := strings.Replace(val.String(), "\r", "", -1)
+		cleanStr := strings.Replace(val.String(), "\r", "", -1) //nolint:staticcheck
 		lines := strings.Split(cleanStr, "\n")
 
 		if len(lines) == 1 && lines[0] == "" {
@@ -137,12 +137,12 @@ func (w *Writer) Flush() error {
 
 			paddingSize := w.widths[colIdx] - len(col.String)
 			if colIdx == lastColIdx {
-				_, err := fmt.Fprintf(w.w, w.borderStr)
+				_, err := fmt.Fprint(w.w, w.borderStr)
 				if err != nil {
 					return err
 				}
 			} else {
-				_, err := fmt.Fprintf(w.w, strings.Repeat(w.bgStr, paddingSize)+w.borderStr)
+				_, err := fmt.Fprint(w.w, strings.Repeat(w.bgStr, paddingSize)+w.borderStr)
 				if err != nil {
 					return err
 				}

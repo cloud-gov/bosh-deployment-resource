@@ -4,12 +4,12 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"io"
-	"io/ioutil"
 	"os"
+
+	"gopkg.in/yaml.v2"
 
 	bosherr "github.com/cloudfoundry/bosh-utils/errors"
 	boshsys "github.com/cloudfoundry/bosh-utils/system"
-	"gopkg.in/yaml.v2"
 )
 
 type StemcellArchiveWithMetadata struct {
@@ -46,14 +46,14 @@ func (a StemcellArchiveWithMetadata) readMFBytes() ([]byte, error) {
 		return nil, bosherr.WrapErrorf(err, "Opening archive")
 	}
 
-	defer file.Close()
+	defer file.Close() //nolint:errcheck
 
 	gr, err := gzip.NewReader(file)
 	if err != nil {
 		return nil, err
 	}
 
-	defer gr.Close()
+	defer gr.Close() //nolint:errcheck
 
 	tr := tar.NewReader(gr)
 
@@ -67,7 +67,7 @@ func (a StemcellArchiveWithMetadata) readMFBytes() ([]byte, error) {
 		}
 
 		if hdr.Name == a.fileName || hdr.Name == "./"+a.fileName {
-			bytes, err := ioutil.ReadAll(tr)
+			bytes, err := io.ReadAll(tr)
 			if err != nil {
 				return nil, bosherr.WrapErrorf(err, "Reading '%s' entry", a.fileName)
 			}

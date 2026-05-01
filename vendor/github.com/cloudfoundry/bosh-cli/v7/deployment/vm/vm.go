@@ -1,21 +1,23 @@
 package vm
 
 import (
+	"errors"
 	"math"
 	"strings"
 	"time"
 
-	biagentclient "github.com/cloudfoundry/bosh-agent/agentclient"
-	bias "github.com/cloudfoundry/bosh-agent/agentclient/applyspec"
+	biagentclient "github.com/cloudfoundry/bosh-agent/v2/agentclient"
+	bias "github.com/cloudfoundry/bosh-agent/v2/agentclient/applyspec"
+	bosherr "github.com/cloudfoundry/bosh-utils/errors"
+	boshlog "github.com/cloudfoundry/bosh-utils/logger"
+	boshretry "github.com/cloudfoundry/bosh-utils/retrystrategy"
+	boshsys "github.com/cloudfoundry/bosh-utils/system"
+
 	bicloud "github.com/cloudfoundry/bosh-cli/v7/cloud"
 	biconfig "github.com/cloudfoundry/bosh-cli/v7/config"
 	bidisk "github.com/cloudfoundry/bosh-cli/v7/deployment/disk"
 	bideplmanifest "github.com/cloudfoundry/bosh-cli/v7/deployment/manifest"
 	biui "github.com/cloudfoundry/bosh-cli/v7/ui"
-	bosherr "github.com/cloudfoundry/bosh-utils/errors"
-	boshlog "github.com/cloudfoundry/bosh-utils/logger"
-	boshretry "github.com/cloudfoundry/bosh-utils/retrystrategy"
-	boshsys "github.com/cloudfoundry/bosh-utils/system"
 )
 
 type Clock interface {
@@ -23,7 +25,8 @@ type Clock interface {
 	Now() time.Time
 }
 
-// go:generate counterfeiter . VM
+// You only need **one** of these per package!
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 
 type VM interface {
 	CID() string
@@ -205,7 +208,8 @@ func (vm *vm) AttachDisk(disk bidisk.Disk) error {
 
 	err = vm.cloud.SetDiskMetadata(disk.CID(), vm.createDiskMetadata())
 	if err != nil {
-		cloudErr, ok := err.(bicloud.Error)
+		var cloudErr bicloud.Error
+		ok := errors.As(err, &cloudErr)
 		if ok && cloudErr.Type() == bicloud.NotImplementedError {
 			vm.logger.Warn(vm.logTag, "'SetDiskMetadata' not implemented by CPI")
 		} else {
@@ -285,7 +289,8 @@ func (vm *vm) Delete() error {
 	deleteErr := vm.cloud.DeleteVM(vm.cid)
 	if deleteErr != nil {
 		// allow VMNotFoundError for idempotency
-		cloudErr, ok := deleteErr.(bicloud.Error)
+		var cloudErr bicloud.Error
+		ok := errors.As(deleteErr, &cloudErr)
 		if !ok || cloudErr.Type() != bicloud.VMNotFoundError {
 			return bosherr.WrapError(deleteErr, "Deleting vm in the cloud")
 		}

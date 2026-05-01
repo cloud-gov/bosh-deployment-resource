@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	bihttpagent "github.com/cloudfoundry/bosh-agent/agentclient/http"
+	bihttpagent "github.com/cloudfoundry/bosh-agent/v2/agentclient/http"
 	bosherr "github.com/cloudfoundry/bosh-utils/errors"
 	bihttpclient "github.com/cloudfoundry/bosh-utils/httpclient"
 	boshlog "github.com/cloudfoundry/bosh-utils/logger"
@@ -14,7 +14,6 @@ import (
 	bidepl "github.com/cloudfoundry/bosh-cli/v7/deployment"
 	boshtpl "github.com/cloudfoundry/bosh-cli/v7/director/template"
 	biinstall "github.com/cloudfoundry/bosh-cli/v7/installation"
-	boshinst "github.com/cloudfoundry/bosh-cli/v7/installation"
 	biinstallmanifest "github.com/cloudfoundry/bosh-cli/v7/installation/manifest"
 	birelsetmanifest "github.com/cloudfoundry/bosh-cli/v7/release/set/manifest"
 	biui "github.com/cloudfoundry/bosh-cli/v7/ui"
@@ -29,7 +28,7 @@ func NewDeploymentDeleter(
 	logTag string,
 	logger boshlog.Logger,
 	deploymentStateService biconfig.DeploymentStateService,
-	releaseManager boshinst.ReleaseManager,
+	releaseManager biinstall.ReleaseManager,
 	cloudFactory bicloud.Factory,
 	agentClientFactory bihttpagent.AgentClientFactory,
 	blobstoreFactory biblobstore.Factory,
@@ -39,7 +38,7 @@ func NewDeploymentDeleter(
 	deploymentOp patch.Op,
 	cpiInstaller bicpirel.CpiInstaller,
 	cpiUninstaller biinstall.Uninstaller,
-	releaseFetcher boshinst.ReleaseFetcher,
+	releaseFetcher biinstall.ReleaseFetcher,
 	releaseSetAndInstallationManifestParser ReleaseSetAndInstallationManifestParser,
 	tempRootConfigurator TempRootConfigurator,
 	targetProvider biinstall.TargetProvider,
@@ -71,7 +70,7 @@ type deploymentDeleter struct {
 	logTag                                  string
 	logger                                  boshlog.Logger
 	deploymentStateService                  biconfig.DeploymentStateService
-	releaseManager                          boshinst.ReleaseManager
+	releaseManager                          biinstall.ReleaseManager
 	cloudFactory                            bicloud.Factory
 	agentClientFactory                      bihttpagent.AgentClientFactory
 	blobstoreFactory                        biblobstore.Factory
@@ -81,7 +80,7 @@ type deploymentDeleter struct {
 	deploymentOp                            patch.Op
 	cpiInstaller                            bicpirel.CpiInstaller
 	cpiUninstaller                          biinstall.Uninstaller
-	releaseFetcher                          boshinst.ReleaseFetcher
+	releaseFetcher                          biinstall.ReleaseFetcher
 	releaseSetAndInstallationManifestParser ReleaseSetAndInstallationManifestParser
 	tempRootConfigurator                    TempRootConfigurator
 	targetProvider                          biinstall.TargetProvider
@@ -126,15 +125,23 @@ func (c *deploymentDeleter) DeleteDeployment(skipDrain bool, stage biui.Stage) (
 			return err
 		}
 
-		cpiReleaseName := installationManifest.Template.Release
-		cpiReleaseRef, found := releaseSetManifest.FindByName(cpiReleaseName)
-		if !found {
-			return bosherr.Errorf("installation release '%s' must refer to a release in releases", cpiReleaseName)
+		errs := []error{}
+		for _, template := range installationManifest.Templates {
+
+			cpiReleaseName := template.Release
+			cpiReleaseRef, found := releaseSetManifest.FindByName(cpiReleaseName)
+			if !found {
+				return bosherr.Errorf("installation release '%s' must refer to a release in releases", cpiReleaseName)
+			}
+
+			err = c.releaseFetcher.DownloadAndExtract(cpiReleaseRef, stage)
+			if err != nil {
+				errs = append(errs, err)
+			}
 		}
 
-		err = c.releaseFetcher.DownloadAndExtract(cpiReleaseRef, stage)
-		if err != nil {
-			return err
+		if len(errs) > 0 {
+			return bosherr.NewMultiError(errs...)
 		}
 
 		err = c.cpiInstaller.ValidateCpiRelease(installationManifest, stage)
@@ -189,7 +196,7 @@ func (c *deploymentDeleter) findCurrentDeploymentAndDelete(skipDrain bool, stage
 
 	return stage.PerformComplex("deleting deployment", func(deleteStage biui.Stage) error {
 		if !found {
-			//TODO: skip? would require adding skip support to PerformComplex
+			// TODO: skip? would require adding skip support to PerformComplex
 			c.logger.Debug(c.logTag, "No current deployment found...")
 			return nil
 		}
@@ -219,7 +226,7 @@ func (c *deploymentDeleter) deploymentManager(installation biinstall.Installatio
 
 	c.logger.Debug(c.logTag, "Creating agent client...")
 
-	agentClient, _ := c.agentClientFactory.NewAgentClient(directorID, installationMbus, caCert)
+	agentClient, _ := c.agentClientFactory.NewAgentClient(directorID, installationMbus, caCert) //nolint:errcheck
 
 	c.logger.Debug(c.logTag, "Creating blobstore client...")
 
